@@ -1,26 +1,70 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@import 'tailwindcss';
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ---------- chart tokens (recharts ใช้ผ่าน .viz-root) ---------- */
+
+.viz-root {
+  color-scheme: light;
+  --chart-surface: #fcfcfb;
+  --chart-text-secondary: #52514e;
+  --chart-muted: #898781;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-series-temp: #2a78d6;
+  --chart-series-humidity: #eb6834;
+}
+
+/* ธีมถูก stamp ลง <html data-theme> ก่อน paint เสมอ (ดู inline script ใน layout.tsx)
+   จึงอ้างอิง data-theme อย่างเดียว ไม่ต้องพึ่ง prefers-color-scheme */
+:root[data-theme='dark'] .viz-root {
+  color-scheme: dark;
+  --chart-surface: #1a1a19;
+  --chart-text-secondary: #c3c2b7;
+  --chart-muted: #898781;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-series-temp: #3987e5;
+  --chart-series-humidity: #d95926;
+}
+
+/* ---------- shell utilities ---------- */
+
+@utility scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-base-300) transparent;
+}
+
+@utility app-surface {
+  background-color: var(--color-base-200);
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: currentColor;
+}
+
+.status-dot-live {
+  animation: pulse-dot 1.8s ease-in-out infinite;
 }

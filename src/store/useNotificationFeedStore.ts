@@ -1,0 +1,32 @@
+'use client'
+
+import { create } from 'zustand'
+
+import type { Notification } from '@/lib/api/notifications'
+import type { SseStatus } from '@/hooks/useSse'
+
+export const MAX_FEED_ITEMS = 20
+
+interface NotificationFeedState {
+  items: Notification[]
+  unreadCount: number
+  status: SseStatus
+  push: (notification: Notification) => void
+  markAllRead: () => void
+  setStatus: (status: SseStatus) => void
+}
+
+export const useNotificationFeedStore = create<NotificationFeedState>(
+  (set) => ({
+    items: [],
+    unreadCount: 0,
+    status: 'connecting',
+    push: (notification) =>
+      set((state) => ({
+        items: [notification, ...state.items].slice(0, MAX_FEED_ITEMS),
+        unreadCount: state.unreadCount + 1,
+      })),
+    markAllRead: () => set({ unreadCount: 0 }),
+    setStatus: (status) => set({ status }),
+  }),
+)
