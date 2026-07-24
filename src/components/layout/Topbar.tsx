@@ -1,15 +1,13 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { KeyRound, Menu } from 'lucide-react'
+import { Menu } from 'lucide-react'
 
 import { NotificationBell } from '@/components/features/notifications/NotificationBell'
-import { useHydrated } from '@/hooks/useHydrated'
-import { useAuthStore } from '@/store/useAuthStore'
 
 import { getNavItem } from './navItems'
 import { ThemeToggle } from './ThemeToggle'
+import { UserMenu } from './UserMenu'
 
 function getPageTitle(pathname: string): string {
   const item = getNavItem(pathname)
@@ -20,9 +18,6 @@ function getPageTitle(pathname: string): string {
 
 export function Topbar() {
   const pathname = usePathname()
-  const hydrated = useHydrated()
-  const storedToken = useAuthStore((state) => state.token)
-  const token = hydrated ? storedToken : null
   const title = getPageTitle(pathname)
 
   return (
@@ -48,19 +43,9 @@ export function Topbar() {
           </ol>
         </nav>
 
-        <Link
-          href="/settings"
-          className={`btn btn-ghost btn-xs hidden gap-1.5 sm:inline-flex ${
-            token ? 'text-success' : 'text-base-content/50'
-          }`}
-          title={token ? 'ตั้งค่า token แล้ว' : 'ยังไม่ได้ตั้งค่า token'}
-        >
-          <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
-          {token ? 'Token พร้อมใช้' : 'ตั้งค่า token'}
-        </Link>
-
         <NotificationBell />
         <ThemeToggle />
+        <UserMenu />
       </div>
     </header>
   )

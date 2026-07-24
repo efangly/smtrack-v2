@@ -1,9 +1,18 @@
 import axios, {
+  type AxiosInstance,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios'
 
-import { getStoredToken } from '@/lib/authToken'
+import {
+  clearStoredRefreshToken,
+  clearStoredToken,
+  getStoredRefreshToken,
+  getStoredToken,
+  setStoredRefreshToken,
+  setStoredToken,
+} from '@/lib/authToken'
+import type { RefreshResult } from '@/types/auth'
 
 export class ApiError extends Error {
   statusCode: number
@@ -41,32 +50,94 @@ export function unwrapEnvelope(response: AxiosResponse): AxiosResponse {
   return response
 }
 
-export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-})
+function toApiError(error: unknown): unknown {
+  if (axios.isAxiosError(error) && error.response) {
+    const body = error.response.data as
+      | { message?: string | string[]; statusCode?: number; path?: string }
+      | undefined
+    const message = Array.isArray(body?.message)
+      ? body.message.join(', ')
+      : (body?.message ?? error.message)
+    return new ApiError(
+      message,
+      body?.statusCode ?? error.response.status,
+      body?.path,
+    )
+  }
+  return error
+}
 
-apiClient.interceptors.request.use(attachAuthHeader)
-apiClient.interceptors.response.use(unwrapEnvelope)
+function createApiClient(baseURL: string | undefined): AxiosInstance {
+  const client = axios.create({
+    baseURL,
+    headers: { 'Content-Type': 'application/json' },
+  })
 
-apiClient.interceptors.response.use(
+  client.interceptors.request.use(attachAuthHeader)
+  client.interceptors.response.use(unwrapEnvelope)
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => Promise.reject(toApiError(error)),
+  )
+
+  return client
+}
+
+export const apiClient = createApiClient(process.env.NEXT_PUBLIC_API_BASE_URL)
+
+export const authApiClient = createApiClient(
+  process.env.NEXT_PUBLIC_AUTH_API_BASE_URL,
+)
+
+function redirectToLogin(): void {
+  clearStoredToken()
+  clearStoredRefreshToken()
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login'
+  }
+}
+
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean
+  }
+}
+
+authApiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (axios.isAxiosError(error) && error.response) {
-      const body = error.response.data as
-        | { message?: string | string[]; statusCode?: number; path?: string }
-        | undefined
-      const message = Array.isArray(body?.message)
-        ? body.message.join(', ')
-        : (body?.message ?? error.message)
-      return Promise.reject(
-        new ApiError(
-          message,
-          body?.statusCode ?? error.response.status,
-          body?.path,
-        ),
-      )
+  async (error) => {
+    const config = axios.isAxiosError(error)
+      ? error.config
+      : undefined
+    const status = axios.isAxiosError(error) ? error.response?.status : null
+
+    const isAuthEndpoint =
+      config?.url === '/login' || config?.url === '/refresh'
+
+    if (status !== 401 || !config || config._retry || isAuthEndpoint) {
+      return Promise.reject(error)
     }
-    return Promise.reject(error)
+
+    const refreshToken = getStoredRefreshToken()
+    if (!refreshToken) {
+      redirectToLogin()
+      return Promise.reject(error)
+    }
+
+    try {
+      const raw = await axios.post<{ data: RefreshResult }>(
+        `${process.env.NEXT_PUBLIC_AUTH_API_BASE_URL}/refresh`,
+        { token: refreshToken },
+      )
+      const result = raw.data.data
+      setStoredToken(result.token)
+      setStoredRefreshToken(result.refreshToken)
+
+      config._retry = true
+      return authApiClient(config)
+    } catch (refreshError) {
+      redirectToLogin()
+      return Promise.reject(refreshError)
+    }
   },
 )
