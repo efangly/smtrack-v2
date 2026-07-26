@@ -1,0 +1,155 @@
+'use client'
+
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
+
+import { useHospitals } from '@/hooks/useHospitals'
+import {
+  WARD_TYPE_LABELS,
+  WARD_TYPE_OPTIONS,
+  type Ward,
+  type WardInput,
+} from '@/lib/api/wards'
+
+export interface WardFormDialogHandle {
+  open: (ward?: Ward) => void
+}
+
+export const WardFormDialog = forwardRef<
+  WardFormDialogHandle,
+  {
+    onSubmit: (id: string | null, dto: WardInput) => void
+    isSubmitting?: boolean
+  }
+>(function WardFormDialog({ onSubmit, isSubmitting }, ref) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const { data: hospitals } = useHospitals()
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<WardInput>({ defaultValues: {} })
+
+  useImperativeHandle(ref, () => ({
+    open: (ward) => {
+      setEditingId(ward?.id ?? null)
+      reset(
+        ward
+          ? {
+              wardName: ward.wardName,
+              wardSeq: ward.wardSeq,
+              type: ward.type ?? undefined,
+              hosId: ward.hosId,
+            }
+          : { type: 'NEW' },
+      )
+      dialogRef.current?.showModal()
+    },
+  }))
+
+  const submit = handleSubmit((values) => {
+    onSubmit(editingId, values)
+    dialogRef.current?.close()
+  })
+
+  return (
+    <dialog ref={dialogRef} className="modal">
+      <div className="modal-box max-w-xl">
+        <h3 className="text-lg font-bold">
+          {editingId ? 'แก้ไขวอร์ด' : 'เพิ่มวอร์ด'}
+        </h3>
+        <form onSubmit={submit} noValidate className="mt-4 flex flex-col gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">
+                ชื่อวอร์ด *
+              </label>
+              <input
+                className="input input-sm input-bordered w-full"
+                {...register('wardName', {
+                  required: 'กรุณากรอกชื่อวอร์ด',
+                  maxLength: {
+                    value: 150,
+                    message: 'ชื่อวอร์ดยาวไม่เกิน 150 ตัวอักษร',
+                  },
+                })}
+              />
+              <span className="mt-1 text-xs text-error empty:hidden">
+                {errors.wardName?.message}
+              </span>
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">
+                โรงพยาบาล *
+              </label>
+              <select
+                className="select select-sm select-bordered w-full"
+                {...register('hosId', { required: 'กรุณาเลือกโรงพยาบาล' })}
+              >
+                <option value="">- เลือกโรงพยาบาล -</option>
+                {hospitals?.map((hospital) => (
+                  <option key={hospital.id} value={hospital.id}>
+                    {hospital.hosName}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 text-xs text-error empty:hidden">
+                {errors.hosId?.message}
+              </span>
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">ลำดับ</label>
+              <input
+                type="number"
+                className="input input-sm input-bordered w-full"
+                {...register('wardSeq', { valueAsNumber: true })}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">ประเภท</label>
+              <select
+                className="select select-sm select-bordered w-full"
+                {...register('type')}
+              >
+                {WARD_TYPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {WARD_TYPE_LABELS[option]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => dialogRef.current?.close()}
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <span className="loading loading-spinner loading-xs" />
+              )}
+              บันทึก
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  )
+})

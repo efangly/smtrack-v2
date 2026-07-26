@@ -1,0 +1,25 @@
+import { z } from 'zod'
+
+import { apiClient } from '@/lib/apiClient'
+
+export const DeviceAuditSchema = z.object({
+  id: z.string(),
+  deviceId: z.string(),
+  staticName: z.string(),
+  action: z.string(),
+  actorId: z.string().nullable(),
+  actorName: z.string().nullable(),
+  actorRole: z.string().nullable(),
+  snapshot: z.unknown(),
+  createAt: z.string(),
+})
+export type DeviceAudit = z.infer<typeof DeviceAuditSchema>
+
+export async function getDeviceAudit(
+  staticName: string,
+): Promise<DeviceAudit[]> {
+  const { data } = await apiClient.get(
+    `/devices/by-name/${encodeURIComponent(staticName)}/audit`,
+  )
+  return z.array(DeviceAuditSchema).parse(data)
+}

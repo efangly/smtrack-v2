@@ -14,7 +14,7 @@ export default function MainLayout({
         <div className="drawer-content flex min-h-screen flex-col bg-base-200">
           <Topbar />
           <main className="flex-1">
-            <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
+            <div className="mx-auto w-full max-w-7xl p-2 md:p-4">
               {children}
             </div>
           </main>

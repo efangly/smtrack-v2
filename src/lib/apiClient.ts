@@ -17,12 +17,21 @@ import type { RefreshResult } from '@/types/auth'
 export class ApiError extends Error {
   statusCode: number
   path?: string
+  // request config ที่ทำให้ error นี้เกิด — จำเป็นสำหรับ interceptor ที่ต่อคิว
+  // หลัง toApiError เพราะมันไม่ได้รับ AxiosError ตัวจริงอีกแล้ว (ดู refresh flow ล่างสุด)
+  config?: InternalAxiosRequestConfig
 
-  constructor(message: string, statusCode: number, path?: string) {
+  constructor(
+    message: string,
+    statusCode: number,
+    path?: string,
+    config?: InternalAxiosRequestConfig,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.statusCode = statusCode
     this.path = path
+    this.config = config
   }
 }
 
@@ -50,7 +59,7 @@ export function unwrapEnvelope(response: AxiosResponse): AxiosResponse {
   return response
 }
 
-function toApiError(error: unknown): unknown {
+export function toApiError(error: unknown): unknown {
   if (axios.isAxiosError(error) && error.response) {
     const body = error.response.data as
       | { message?: string | string[]; statusCode?: number; path?: string }
@@ -62,6 +71,7 @@ function toApiError(error: unknown): unknown {
       message,
       body?.statusCode ?? error.response.status,
       body?.path,
+      error.config,
     )
   }
   return error
@@ -103,13 +113,26 @@ declare module 'axios' {
   }
 }
 
+// interceptor ตัวนี้ถูกลงทะเบียนหลัง toApiError ใน createApiClient จึงได้รับ
+// `ApiError` ไม่ใช่ `AxiosError` — ต้องอ่าน status/config จาก ApiError เป็นทางหลัก
+// (เคสที่ยัง axios อยู่จะเกิดได้เฉพาะ error ที่ไม่มี response เช่น network error)
+function extractErrorContext(error: unknown): {
+  status: number | null
+  config: InternalAxiosRequestConfig | undefined
+} {
+  if (error instanceof ApiError) {
+    return { status: error.statusCode, config: error.config }
+  }
+  if (axios.isAxiosError(error)) {
+    return { status: error.response?.status ?? null, config: error.config }
+  }
+  return { status: null, config: undefined }
+}
+
 authApiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const config = axios.isAxiosError(error)
-      ? error.config
-      : undefined
-    const status = axios.isAxiosError(error) ? error.response?.status : null
+    const { status, config } = extractErrorContext(error)
 
     const isAuthEndpoint =
       config?.url === '/login' || config?.url === '/refresh'

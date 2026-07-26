@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Eye, EyeOff, Lock, User } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
@@ -13,6 +15,7 @@ import { LoginRequestSchema, type LoginRequest } from '@/types/auth'
 export function LoginForm() {
   const router = useRouter()
   const storeLogin = useAuthStore((state) => state.login)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -37,43 +40,80 @@ export function LoginForm() {
   })
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <label className="form-control">
-        <span className="label-text mb-1">ชื่อผู้ใช้</span>
-        <input
-          type="text"
-          className="input input-bordered"
-          autoComplete="username"
-          {...register('username')}
-        />
-        {errors.username && (
-          <span className="text-error text-sm mt-1">
-            {errors.username.message}
-          </span>
-        )}
-      </label>
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <div className="form-control">
+        <label htmlFor="username" className="label-text mb-1.5 block">
+          ชื่อผู้ใช้
+        </label>
+        <div className="input input-bordered flex items-center gap-2">
+          <User className="h-4 w-4 shrink-0 text-base-content/40" aria-hidden />
+          <input
+            id="username"
+            type="text"
+            className="grow"
+            autoComplete="username"
+            autoFocus
+            aria-invalid={Boolean(errors.username)}
+            aria-describedby={errors.username ? 'username-error' : undefined}
+            {...register('username')}
+          />
+        </div>
+        <span
+          id="username-error"
+          aria-live="polite"
+          className="mt-1 text-sm text-error empty:hidden"
+        >
+          {errors.username?.message}
+        </span>
+      </div>
 
-      <label className="form-control">
-        <span className="label-text mb-1">รหัสผ่าน</span>
-        <input
-          type="password"
-          className="input input-bordered"
-          autoComplete="current-password"
-          {...register('password')}
-        />
-        {errors.password && (
-          <span className="text-error text-sm mt-1">
-            {errors.password.message}
-          </span>
-        )}
-      </label>
+      <div className="form-control">
+        <label htmlFor="password" className="label-text mb-1.5 block">
+          รหัสผ่าน
+        </label>
+        <div className="input input-bordered flex items-center gap-2">
+          <Lock className="h-4 w-4 shrink-0 text-base-content/40" aria-hidden />
+          <input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            className="grow"
+            autoComplete="current-password"
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+            {...register('password')}
+          />
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs btn-circle shrink-0"
+            aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+            aria-pressed={showPassword}
+            onClick={() => setShowPassword((value) => !value)}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" aria-hidden />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden />
+            )}
+          </button>
+        </div>
+        <span
+          id="password-error"
+          aria-live="polite"
+          className="mt-1 text-sm text-error empty:hidden"
+        >
+          {errors.password?.message}
+        </span>
+      </div>
 
       <button
         type="submit"
-        className="btn btn-primary mt-2"
+        className="btn btn-primary mt-1 w-full"
         disabled={isSubmitting}
       >
-        {isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+        {isSubmitting && (
+          <span className="loading loading-spinner loading-sm" aria-hidden />
+        )}
+        เข้าสู่ระบบ
       </button>
     </form>
   )

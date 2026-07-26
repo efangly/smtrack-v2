@@ -1,6 +1,6 @@
 const TOKEN_STORAGE_KEY = 'smtrack.authToken'
 const REFRESH_STORAGE_KEY = 'smtrack.refreshToken'
-const TOKEN_COOKIE_NAME = 'smtrack.authToken'
+export const TOKEN_COOKIE_NAME = 'smtrack.authToken'
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null

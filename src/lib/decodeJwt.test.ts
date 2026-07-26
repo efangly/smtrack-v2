@@ -28,6 +28,16 @@ describe('decodeJwtPayload', () => {
     })
   })
 
+  it('decodes UTF-8 multi-byte characters (Thai name) correctly', () => {
+    const token = makeToken({
+      id: 'u2',
+      name: 'สมชาย ใจดี',
+      role: 'ADMIN',
+      wardId: 'w1',
+    })
+    expect(decodeJwtPayload<{ name: string }>(token)?.name).toBe('สมชาย ใจดี')
+  })
+
   it('returns null for a malformed token', () => {
     expect(decodeJwtPayload('not-a-jwt')).toBeNull()
   })

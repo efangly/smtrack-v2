@@ -29,11 +29,16 @@ export function DeviceNotificationsPanel() {
             router.push(`/notifications?${params.toString()}`)
           }}
         >
-          {devices?.map((device) => (
-            <option key={device.id} value={device.serial}>
-              {device.serial} — {device.name ?? device.staticName}
-            </option>
-          ))}
+          {devices
+            ?.filter(
+              (device): device is typeof device & { serial: string } =>
+                device.serial !== null,
+            )
+            .map((device) => (
+              <option key={device.id} value={device.serial}>
+                {device.serial} — {device.name ?? device.staticName}
+              </option>
+            ))}
         </select>
       </label>
 

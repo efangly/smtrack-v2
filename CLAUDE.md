@@ -136,6 +136,38 @@ npm test
 - ส่วน `useNotificationLiveFeed` / `useTelemetryLiveFeed` เป็น stream ราย serial คนละหน้าที่กัน ยังเปิด connection ของตัวเองตามปกติ
 - API ไม่มี endpoint การแจ้งเตือนรวมทุกอุปกรณ์ ตัวเลขใน bell จึงนับเฉพาะ event ที่เข้ามาระหว่างเปิดแอป
 
+### สอง backend service — เลือก client ให้ถูก
+
+| Resource | Client | Base URL |
+| --- | --- | --- |
+| อุปกรณ์, โพรบ, ซ่อม, config, telemetry, กราฟ, การแจ้งเตือน, backup | `apiClient` | `NEXT_PUBLIC_API_BASE_URL` |
+| login/refresh, ผู้ใช้, วอร์ด, โรงพยาบาล, reset password, health | `authApiClient` | `NEXT_PUBLIC_AUTH_API_BASE_URL` |
+
+- ทั้งสองตัวสร้างจาก `createApiClient` ใน `src/lib/apiClient.ts` แต่ **เฉพาะ `authApiClient` เท่านั้นที่มี 401 auto-refresh**
+- interceptor `toApiError` ถูกลงทะเบียนก่อน interceptor refresh ดังนั้น refresh handler จะได้ `ApiError` ไม่ใช่ `AxiosError` — `ApiError` จึงพก `config` ติดไปด้วยเพื่อให้ retry request เดิมได้ อย่าถอด field นี้ออก
+- envelope ของสอง service ไม่เหมือนกัน: log service ส่ง `statusCode` มาด้วย ส่วน auth service มีแค่ `{ message, success, data }` — `toApiError` จึง fallback ไปใช้ HTTP status
+- endpoint ที่ผลลัพธ์เป็น **string ไม่ใช่ entity**: `DELETE /ward/:id` และ `PATCH /reset/:id`
+- `POST /user` รับ **JSON เท่านั้น** (handler ไม่อ่าน FormFile) ส่วน `PUT /user/:id`, `POST /register`, `POST|PUT /hospital` รับไฟล์ผ่าน form field ชื่อ `image` — ใช้ `toFormData`/`hasFile` จาก `src/lib/api/formData.ts` เลือกโหมดให้อัตโนมัติ
+
+### เมนูตั้งค่า (`/settings/*`)
+
+- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `users`, `wards`, `hospitals`, `devices` เป็น sub-route
+- `<h1>ตั้งค่า</h1>` อยู่ที่ `src/app/(main)/settings/layout.tsx` **ที่เดียว** — หน้าย่อยใส่ได้แค่หัวข้อระดับการ์ด
+- เมนูย่อยประกาศใน `NavItem.children` (`src/components/layout/navItems.ts`) พร้อม `can` predicate ส่วน `SidebarNav` เป็นตัวกรองตาม role (ต้องผ่าน `useHydrated()` ก่อน ไม่งั้น hydration ไม่ตรง)
+- `src/proxy.ts` เช็คแค่ว่ามี token cookie **ไม่ได้เช็ค role** — หน้าที่จำกัดสิทธิ์ต้องครอบด้วย `SettingsGuard` (รับ prop เป็น key ไม่ใช่ function เพราะ page เป็น Server Component ส่ง function ข้าม boundary ไม่ได้)
+- สิทธิ์ใน `src/lib/permissions.ts` ต้องตรงกับ `RolesGuard` ของ smtrack-authentication เสมอ — มี `src/lib/permissions.test.ts` ล็อกตารางนี้ไว้
+- `/settings/devices` เป็นทะเบียนอุปกรณ์ (เพิ่ม/แก้ไข) ส่วน `/devices` ยังเป็นหน้า monitoring เหมือนเดิม — backend ไม่มี endpoint ลบอุปกรณ์
+
+### ⚠️ `device.ward` ไม่ใช่วอร์ดของ auth service
+
+`ward` ของอุปกรณ์ (log service) เป็น **free text** เช่น `"ICU"`, `"OPD"` เก็บเป็นสตริงเปล่าๆ ไม่ได้ผูก
+foreign key กับตาราง `Wards` ของ auth service (ซึ่ง id เป็น `WID-...`/uuid และชื่อเป็นคนละชุด เช่น `DEV`,
+`รพ.สิงหนคร`) — ห้ามทำช่องวอร์ดในฟอร์มอุปกรณ์เป็น `<select>` ที่ส่ง ward id ไป เพราะจะทำให้ค่าเดิมหาย
+ตอนแก้ไขและเขียน id ปนลงไปในฟิลด์ที่เก็บชื่อ ใช้ `<input>` + `<datalist>` ที่รวบรวมชื่อวอร์ดจาก
+อุปกรณ์ที่มีอยู่แทน (ดู `DeviceFormDialog.tsx`)
+
 ### ข้อควรระวังเรื่อง e2e
 
 Playwright ใช้ strict mode — ข้อความที่ assert ในเทส (เช่น `อุปกรณ์ทั้งหมด`, `การแจ้งเตือนล่าสุด`) ต้อง match ได้ตัวเดียวในหน้านั้น ระวังหัวข้อ dropdown/การ์ดที่ใช้คำซ้ำกัน
+
+การ match ชื่อ role ของ Playwright เป็น **substring** โดยค่าเริ่มต้น — เมนู `อุปกรณ์` กับ `จัดการอุปกรณ์` จึงชนกัน ต้องใส่ `{ exact: true }` (ดู `e2e/devices.spec.ts`)

@@ -1,0 +1,128 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+import * as usersApi from '@/lib/api/users'
+import * as wardsApi from '@/lib/api/wards'
+import { useAuthStore } from '@/store/useAuthStore'
+import type { Role } from '@/types/auth'
+
+import { UserList } from './UserList'
+
+jest.mock('@/lib/api/users')
+jest.mock('@/lib/api/wards')
+
+function renderWithClient(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
+function signInAs(role: Role) {
+  useAuthStore.setState({
+    token: 'token',
+    refreshToken: 'refresh',
+    payload: {
+      id: 'me',
+      name: 'ฉัน',
+      role,
+      hosId: 'h-1',
+      wardId: 'w-1',
+    },
+  })
+}
+
+const users: usersApi.User[] = [
+  {
+    id: 'u-1',
+    wardId: 'w-1',
+    username: 'somchai',
+    status: true,
+    role: 'ADMIN',
+    display: 'สมชาย',
+    pic: null,
+    comment: null,
+    createBy: null,
+    createAt: '2026-07-01T00:00:00Z',
+    updateAt: '2026-07-01T00:00:00Z',
+    ward: { id: 'w-1', wardName: 'ICU', hosId: 'h-1' },
+  },
+  {
+    id: 'u-2',
+    wardId: 'w-2',
+    username: 'malee',
+    status: false,
+    role: 'USER',
+    display: null,
+    pic: null,
+    comment: null,
+    createBy: null,
+    createAt: '2026-07-01T00:00:00Z',
+    updateAt: '2026-07-01T00:00:00Z',
+    ward: { id: 'w-2', wardName: 'OPD', hosId: 'h-1' },
+  },
+]
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  jest.mocked(usersApi.getUsers).mockResolvedValue(users)
+  jest.mocked(wardsApi.getWards).mockResolvedValue([])
+})
+
+describe('UserList', () => {
+  it('renders each user with its ward and status', async () => {
+    signInAs('SUPER')
+    renderWithClient(<UserList />)
+
+    const row = (await screen.findByText('somchai')).closest(
+      'tr',
+    ) as HTMLElement
+    expect(within(row).getByText('ICU')).toBeInTheDocument()
+    expect(within(row).getByText('ใช้งาน')).toBeInTheDocument()
+
+    const disabledRow = screen.getByText('malee').closest('tr') as HTMLElement
+    expect(within(disabledRow).getByText('ปิดใช้งาน')).toBeInTheDocument()
+  })
+
+  it('hides the management column and add button for roles without permission', async () => {
+    signInAs('USER')
+    renderWithClient(<UserList />)
+
+    await screen.findByText('somchai')
+    expect(screen.queryByText('การจัดการ')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'เพิ่มผู้ใช้' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('filters the table by keyword', async () => {
+    signInAs('SUPER')
+    const user = userEvent.setup()
+    renderWithClient(<UserList />)
+
+    await screen.findByText('somchai')
+    await user.type(screen.getByRole('searchbox', { name: 'ค้นหาผู้ใช้' }), 'malee')
+
+    expect(screen.queryByText('somchai')).not.toBeInTheDocument()
+    expect(screen.getByText('malee')).toBeInTheDocument()
+  })
+
+  it('does not delete until the confirm dialog is accepted', async () => {
+    signInAs('SUPER')
+    const user = userEvent.setup()
+    renderWithClient(<UserList />)
+
+    await screen.findByText('somchai')
+    await user.click(screen.getByRole('button', { name: 'ลบ somchai' }))
+
+    expect(usersApi.deleteUser).not.toHaveBeenCalled()
+
+    const dialog = screen
+      .getByText('ยืนยันลบผู้ใช้')
+      .closest('.modal-box') as HTMLElement
+    await user.click(within(dialog).getByRole('button', { name: 'ลบ' }))
+
+    expect(usersApi.deleteUser).toHaveBeenCalledWith('u-1')
+  })
+})

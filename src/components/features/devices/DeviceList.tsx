@@ -107,10 +107,10 @@ export function DeviceList() {
                 <tr key={device.id} className="hover">
                   <td>
                     <Link
-                      href={`/devices/${encodeURIComponent(device.serial)}`}
+                      href={`/devices/${encodeURIComponent(device.staticName)}`}
                       className="link link-primary font-mono"
                     >
-                      {device.serial}
+                      {device.serial ?? '-'}
                     </Link>
                   </td>
                   <td className="text-base-content/70">{device.ward}</td>
@@ -122,9 +122,9 @@ export function DeviceList() {
                   </td>
                   <td className="text-right">
                     <Link
-                      href={`/devices/${encodeURIComponent(device.serial)}`}
+                      href={`/devices/${encodeURIComponent(device.staticName)}`}
                       className="btn btn-ghost btn-xs"
-                      aria-label={`ดูรายละเอียด ${device.serial}`}
+                      aria-label={`ดูรายละเอียด ${device.name ?? device.staticName}`}
                     >
                       <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </Link>

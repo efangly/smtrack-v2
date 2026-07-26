@@ -10,6 +10,25 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ---------- brand: cold-chain blue ----------
+   override เฉพาะ primary ทับธีม light/dark ของ daisyUI ไม่ประกาศธีมใหม่ทั้งก้อน */
+:root[data-theme='light'] {
+  --color-primary: oklch(52% 0.17 252);
+  --color-primary-content: oklch(98% 0.01 252);
+}
+
+:root[data-theme='dark'] {
+  --color-primary: oklch(70% 0.14 252);
+  --color-primary-content: oklch(21% 0.04 252);
+}
+
+/* แผงแบรนด์หน้า login: ธีมมืดใช้น้ำเงินเข้มแทน primary สว่าง ไม่ให้จ้าเกินไป
+   (redefine ตัวแปรในสโคปนี้ ลูก ๆ ที่ใช้ bg-primary-content/xx จึงตามไปด้วย) */
+:root[data-theme='dark'] .auth-brand {
+  --color-primary: oklch(32% 0.09 252);
+  --color-primary-content: oklch(96% 0.015 252);
+}
+
 /* ---------- chart tokens (recharts ใช้ผ่าน .viz-root) ---------- */
 
 .viz-root {
@@ -45,6 +64,22 @@
 
 @utility app-surface {
   background-color: var(--color-base-200);
+}
+
+/* กริดจาง ๆ สำหรับแผงแบรนด์หน้า login (ไม่ต้องมีไฟล์ภาพ) */
+@utility brand-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklch, var(--color-primary-content) 12%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--color-primary-content) 12%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 32px 32px;
 }
 
 @keyframes pulse-dot {
