@@ -1,17 +1,18 @@
 'use client'
 
+import { useState } from 'react'
+
 import { Badge } from '@/components/ui/Badge'
-import { useHydrated } from '@/hooks/useHydrated'
-import { useUser } from '@/hooks/useUser'
-import { useAuthStore } from '@/store/useAuthStore'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useUpdateUser } from '@/hooks/useUpdateUser'
+import { resolveApiImageUrl } from '@/lib/imageUrl'
 import { ROLE_LABELS } from '@/types/auth'
 
 export function AccountCard() {
-  const hydrated = useHydrated()
-  const payload = useAuthStore((state) => state.payload)
-  // JWT มีแต่ id/ward id — ดึงรายละเอียดจริง (ชื่อวอร์ด, โรงพยาบาล) จาก GET /user/:id
-  // ซึ่ง preload ward.hospital มาให้ด้วย
-  const { data: user } = useUser(hydrated ? (payload?.id ?? '') : '')
+  const { data: user, payload, hydrated } = useCurrentUser()
+  const updateUser = useUpdateUser()
+  const [pic, setPic] = useState<File | null>(null)
 
   if (!hydrated || !payload) {
     return (
@@ -19,9 +20,11 @@ export function AccountCard() {
     )
   }
 
+  const displayName = user?.display ?? payload.name
+
   const rows: { label: string; value: string }[] = [
     { label: 'ชื่อผู้ใช้', value: user?.username ?? '-' },
-    { label: 'ชื่อที่แสดง', value: user?.display ?? payload.name },
+    { label: 'ชื่อที่แสดง', value: displayName },
     { label: 'วอร์ด', value: user?.ward?.wardName ?? payload.wardId },
     {
       label: 'โรงพยาบาล',
@@ -29,8 +32,49 @@ export function AccountCard() {
     },
   ]
 
+  // บันทึกเฉพาะรูป — useUpdateUser invalidate ['users', id] ซึ่งเป็น query เดียวกับที่
+  // useCurrentUser ใช้ รูปใหม่จึงขึ้นเองทั้งการ์ดนี้และ sidebar โดยไม่ต้อง refresh
+  const savePic = () => {
+    if (!pic) return
+    updateUser.mutate(
+      { id: payload.id, dto: { image: pic } },
+      { onSuccess: () => setPic(null) },
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <ImageUploadField
+          label="รูปโปรไฟล์"
+          currentUrl={resolveApiImageUrl(user?.pic)}
+          value={pic}
+          onChange={setPic}
+          shape="circle"
+          size={96}
+          fallback={
+            <span className="text-2xl font-semibold uppercase">
+              {displayName.trim().charAt(0) || '?'}
+            </span>
+          }
+          disabled={updateUser.isPending}
+        />
+
+        {pic && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={savePic}
+            disabled={updateUser.isPending}
+          >
+            {updateUser.isPending && (
+              <span className="loading loading-spinner loading-xs" />
+            )}
+            บันทึกรูป
+          </button>
+        )}
+      </div>
+
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         {rows.map((row) => (
           <div key={row.label}>

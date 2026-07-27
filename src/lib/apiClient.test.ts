@@ -1,7 +1,13 @@
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { AxiosError, AxiosHeaders } from 'axios'
 
-import { ApiError, attachAuthHeader, toApiError, unwrapEnvelope } from './apiClient'
+import {
+  ApiError,
+  attachAuthHeader,
+  stripJsonContentTypeForFormData,
+  toApiError,
+  unwrapEnvelope,
+} from './apiClient'
 import { clearStoredToken, setStoredToken } from './authToken'
 
 function makeResponse(data: unknown): AxiosResponse {
@@ -59,10 +65,15 @@ describe('toApiError', () => {
   it('maps an axios error to ApiError using the response status', () => {
     // auth service ตอบ { message, success, data } โดยไม่มี statusCode
     const result = toApiError(
-      makeAxiosError(403, { message: 'You do not have the required role', success: false }),
+      makeAxiosError(403, {
+        message: 'You do not have the required role',
+        success: false,
+      }),
     )
     expect(result).toBeInstanceOf(ApiError)
-    expect((result as ApiError).message).toBe('You do not have the required role')
+    expect((result as ApiError).message).toBe(
+      'You do not have the required role',
+    )
     expect((result as ApiError).statusCode).toBe(403)
   })
 
@@ -81,6 +92,30 @@ describe('toApiError', () => {
   it('passes through errors that are not axios errors', () => {
     const plain = new Error('boom')
     expect(toApiError(plain)).toBe(plain)
+  })
+})
+
+describe('stripJsonContentTypeForFormData', () => {
+  it('removes the JSON content type so the browser can set a multipart boundary', () => {
+    const config = {
+      headers: new AxiosHeaders({ 'Content-Type': 'application/json' }),
+      data: new FormData(),
+    } as InternalAxiosRequestConfig
+
+    const result = stripJsonContentTypeForFormData(config)
+
+    expect(result.headers.get('Content-Type')).toBeUndefined()
+  })
+
+  it('leaves the JSON content type alone for plain object bodies', () => {
+    const config = {
+      headers: new AxiosHeaders({ 'Content-Type': 'application/json' }),
+      data: { username: 'somchai' },
+    } as InternalAxiosRequestConfig
+
+    const result = stripJsonContentTypeForFormData(config)
+
+    expect(result.headers.get('Content-Type')).toBe('application/json')
   })
 })
 

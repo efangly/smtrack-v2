@@ -17,5 +17,14 @@ export function Badge({
   tone: BadgeTone
   children: ReactNode
 }) {
-  return <span className={`badge ${TONE_CLASS[tone]}`}>{children}</span>
+  // ความสูงคงที่ของ .badge (daisyUI) แคบเกินไปสำหรับสระ/วรรณยุกต์ไทยที่ลอยสูง เช่น
+  // ่ ้ ๊ ๋ ์ (โดยเฉพาะ "ออนไลน์"/"ออฟไลน์") ทำให้ดูเหมือนตัวอักษรถูกตัด —
+  // ปลด height คงที่ออกแล้วเผื่อ padding แนวตั้งให้พอแทน
+  return (
+    <span
+      className={`badge badge-sm h-auto whitespace-nowrap px-2 py-0.5 leading-normal ${TONE_CLASS[tone]}`}
+    >
+      {children}
+    </span>
+  )
 }

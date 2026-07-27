@@ -1,20 +1,22 @@
 'use client'
 
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import type {
   CreateDeviceInput,
   Device,
   UpdateDeviceInput,
 } from '@/lib/api/devices'
+import { resolveDeviceImageUrl } from '@/lib/imageUrl'
 
 export interface DeviceFormDialogHandle {
   open: (device?: Device) => void
 }
 
 type DeviceFormValues = Omit<CreateDeviceInput, 'positionPic'> & {
-  positionPic?: FileList
+  positionPic?: File | null
 }
 
 const TEXT_FIELDS: { key: keyof DeviceFormValues; label: string }[] = [
@@ -39,10 +41,12 @@ export const DeviceFormDialog = forwardRef<
   ref,
 ) {
   const dialogRef = useRef<HTMLDialogElement>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  // เก็บทั้ง device ไม่ใช่แค่ id เพราะต้องใช้ positionPic เดิมมาแสดงเป็น preview
+  const [editing, setEditing] = useState<Device | null>(null)
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -50,7 +54,7 @@ export const DeviceFormDialog = forwardRef<
 
   useImperativeHandle(ref, () => ({
     open: (device) => {
-      setEditingId(device?.id ?? null)
+      setEditing(device ?? null)
       reset(
         device
           ? {
@@ -67,8 +71,9 @@ export const DeviceFormDialog = forwardRef<
               tag: device.tag ?? undefined,
               remark: device.remark ?? undefined,
               installDate: device.hardware?.installDate?.slice(0, 10),
+              positionPic: null,
             }
-          : { status: true, seq: 0 },
+          : { status: true, seq: 0, positionPic: null },
       )
       dialogRef.current?.showModal()
     },
@@ -76,10 +81,9 @@ export const DeviceFormDialog = forwardRef<
 
   const submit = handleSubmit((values) => {
     const { positionPic, ...rest } = values
-    const file = positionPic?.[0]
-    const dto = { ...rest, ...(file ? { positionPic: file } : {}) }
-    if (editingId) {
-      onUpdate(editingId, dto)
+    const dto = { ...rest, ...(positionPic ? { positionPic } : {}) }
+    if (editing) {
+      onUpdate(editing.id, dto)
     } else {
       onCreate(dto)
     }
@@ -90,7 +94,7 @@ export const DeviceFormDialog = forwardRef<
     <dialog ref={dialogRef} className="modal">
       <div className="modal-box max-w-2xl">
         <h3 className="text-lg font-bold">
-          {editingId ? 'แก้ไขอุปกรณ์' : 'เพิ่มอุปกรณ์'}
+          {editing ? 'แก้ไขอุปกรณ์' : 'เพิ่มอุปกรณ์'}
         </h3>
         <form onSubmit={submit} noValidate className="mt-4 flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -112,7 +116,7 @@ export const DeviceFormDialog = forwardRef<
               <input
                 className="input input-sm input-bordered w-full font-mono"
                 // staticName เป็นตัวอ้างอิงจุดติดตั้งในทุก URL — เปลี่ยนแล้วลิงก์เดิมจะเสีย
-                disabled={Boolean(editingId)}
+                disabled={Boolean(editing)}
                 {...register('staticName', {
                   required: 'กรุณากรอกชื่อคงที่',
                 })}
@@ -175,6 +179,23 @@ export const DeviceFormDialog = forwardRef<
               />
             </div>
 
+            {/* ช่องรูปอยู่คอลัมน์ซ้าย ให้เห็นก่อนวันที่ติดตั้ง */}
+            <Controller
+              control={control}
+              name="positionPic"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="รูปตำแหน่งติดตั้ง"
+                  currentUrl={resolveDeviceImageUrl(editing?.positionPic)}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  shape="square"
+                  size={72}
+                  fit="contain"
+                />
+              )}
+            />
+
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">
                 วันที่ติดตั้ง
@@ -183,18 +204,6 @@ export const DeviceFormDialog = forwardRef<
                 type="date"
                 className="input input-sm input-bordered w-full"
                 {...register('installDate')}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label-text mb-1 block text-xs">
-                รูปตำแหน่งติดตั้ง
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="file-input file-input-sm file-input-bordered w-full"
-                {...register('positionPic')}
               />
             </div>
 

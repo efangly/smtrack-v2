@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { KeyRound, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
+import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import {
   ConfirmDialog,
@@ -13,6 +14,8 @@ import { useDeleteUser } from '@/hooks/useDeleteUser'
 import { useResetPassword } from '@/hooks/useResetPassword'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useUsers } from '@/hooks/useUsers'
+import type { CreateUserInput } from '@/lib/api/users'
+import { resolveApiImageUrl } from '@/lib/imageUrl'
 import { canManageUsers } from '@/lib/permissions'
 import { useAuthStore } from '@/store/useAuthStore'
 import { ROLE_LABELS, ROLE_OPTIONS, type Role } from '@/types/auth'
@@ -40,6 +43,13 @@ export function UserList() {
 
   const [keyword, setKeyword] = useState('')
   const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
+
+  // POST /user รับ JSON เท่านั้น (handler ไม่อ่าน FormFile) รูปจึงต้องอัปโหลด
+  // เป็นขั้นที่สองผ่าน PUT /user/:id หลังสร้างผู้ใช้สำเร็จแล้ว
+  const createWithPic = async (dto: CreateUserInput, image?: File) => {
+    const created = await createUser.mutateAsync(dto).catch(() => null)
+    if (created && image) updateUser.mutate({ id: created.id, dto: { image } })
+  }
 
   const filtered = useMemo(() => {
     if (!users) return []
@@ -125,7 +135,16 @@ export function UserList() {
             <tbody>
               {filtered.map((user) => (
                 <tr key={user.id}>
-                  <td className="font-mono">{user.username}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <Avatar
+                        src={resolveApiImageUrl(user.pic)}
+                        alt={user.display ?? user.username}
+                        size={32}
+                      />
+                      <span className="font-mono">{user.username}</span>
+                    </div>
+                  </td>
                   <td>{user.display ?? '-'}</td>
                   <td>{ROLE_LABELS[user.role]}</td>
                   <td>{user.ward?.wardName ?? '-'}</td>
@@ -182,7 +201,7 @@ export function UserList() {
       <UserFormDialog
         ref={formDialogRef}
         isSubmitting={createUser.isPending || updateUser.isPending}
-        onCreate={(dto) => createUser.mutate(dto)}
+        onCreate={createWithPic}
         onUpdate={(id, dto) => updateUser.mutate({ id, dto })}
       />
 

@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 
 import type { Device } from '@/lib/api/devices'
+import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
+import { resolveDeviceImageUrl } from '@/lib/imageUrl'
 
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 
@@ -12,36 +14,57 @@ export function DeviceInfoCard({
   device: Device
   action?: ReactNode
 }) {
+  const positionPicUrl = resolveDeviceImageUrl(device.positionPic)
+  const title = device.name ?? device.staticName
+
   return (
-    <Card title={device.name ?? device.staticName} action={action}>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm md:grid-cols-3">
-        <div>
-          <dt className="text-base-content/60">Serial</dt>
-          <dd>{device.serial ?? 'ยังไม่มีกล่องเสียบ'}</dd>
-        </div>
-        <div>
-          <dt className="text-base-content/60">Ward</dt>
-          <dd>{device.ward}</dd>
-        </div>
-        <div>
-          <dt className="text-base-content/60">Firmware</dt>
-          <dd>{device.hardware?.firmware ?? '-'}</dd>
-        </div>
-        <div>
-          <dt className="text-base-content/60">ตำแหน่ง</dt>
-          <dd>{device.position ?? '-'}</dd>
-        </div>
-        <div>
-          <dt className="text-base-content/60">สถานะ</dt>
-          <dd>
-            <DeviceStatusBadge online={device.online} />
-          </dd>
-        </div>
-        <div>
-          <dt className="text-base-content/60">หมายเหตุ</dt>
-          <dd>{device.remark ?? '-'}</dd>
-        </div>
-      </dl>
+    <Card title={title} action={action}>
+      {/* รูปอยู่ซ้าย รายละเอียดอยู่ขวา — บนจอเล็กวางซ้อนกันตามปกติ */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        {positionPicUrl && (
+          <figure className="flex shrink-0 flex-col gap-1">
+            <Avatar
+              src={positionPicUrl}
+              alt={`รูปตำแหน่งติดตั้งของ ${title}`}
+              shape="square"
+              fit="contain"
+              size={160}
+            />
+            <figcaption className="text-xs text-base-content/60">
+              รูปตำแหน่งติดตั้ง
+            </figcaption>
+          </figure>
+        )}
+
+        <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-2 text-sm md:grid-cols-3">
+          <div>
+            <dt className="text-base-content/60">Serial</dt>
+            <dd>{device.serial ?? 'ยังไม่มีกล่องเสียบ'}</dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">Ward</dt>
+            <dd>{device.ward}</dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">Firmware</dt>
+            <dd>{device.hardware?.firmware ?? '-'}</dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">ตำแหน่ง</dt>
+            <dd>{device.position ?? '-'}</dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">สถานะ</dt>
+            <dd>
+              <DeviceStatusBadge online={device.online} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">หมายเหตุ</dt>
+            <dd>{device.remark ?? '-'}</dd>
+          </div>
+        </dl>
+      </div>
     </Card>
   )
 }

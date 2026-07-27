@@ -1,6 +1,9 @@
 'use client'
 
 import { useRef, useImperativeHandle, forwardRef } from 'react'
+import { createPortal } from 'react-dom'
+
+import { useHydrated } from '@/hooks/useHydrated'
 
 export interface ConfirmDialogHandle {
   showModal: () => void
@@ -22,12 +25,15 @@ export const ConfirmDialog = forwardRef<
   ref,
 ) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const hydrated = useHydrated()
 
   useImperativeHandle(ref, () => ({
     showModal: () => dialogRef.current?.showModal(),
   }))
 
-  return (
+  if (!hydrated) return null
+
+  return createPortal(
     <dialog ref={dialogRef} className="modal">
       <div className="modal-box">
         <h3 className="text-lg font-bold">{title}</h3>
@@ -56,6 +62,7 @@ export const ConfirmDialog = forwardRef<
       <form method="dialog" className="modal-backdrop">
         <button>close</button>
       </form>
-    </dialog>
+    </dialog>,
+    document.body,
   )
 })

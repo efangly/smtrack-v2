@@ -1,8 +1,6 @@
 import { Card } from '@/components/ui/Card'
 import { DeviceList } from '@/components/features/devices/DeviceList'
 import { DeviceStatsRow } from '@/components/features/devices/DeviceStatsRow'
-import { NotificationFeedStatus } from '@/components/features/notifications/NotificationFeedStatus'
-import { RecentNotificationsTicker } from '@/components/features/notifications/RecentNotificationsTicker'
 
 export default function DashboardOverviewPage() {
   return (
@@ -16,21 +14,12 @@ export default function DashboardOverviewPage() {
 
       <DeviceStatsRow />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card
-            title="อุปกรณ์ทั้งหมด"
-            description="ค้นหาและกรองตามสถานะการเชื่อมต่อ"
-          >
-            <DeviceList />
-          </Card>
-        </div>
-        <div>
-          <Card title="การแจ้งเตือนล่าสุด" action={<NotificationFeedStatus />}>
-            <RecentNotificationsTicker />
-          </Card>
-        </div>
-      </div>
+      <Card
+        title="อุปกรณ์ทั้งหมด"
+        description="ค้นหาและกรองตามสถานะการเชื่อมต่อ"
+      >
+        <DeviceList />
+      </Card>
     </div>
   )
 }

@@ -45,6 +45,18 @@ export function attachAuthHeader(
   return config
 }
 
+// client ตั้ง Content-Type: application/json ไว้เป็นค่าเริ่มต้น ซึ่งจะทับ multipart
+// ของ FormData ทำให้ request ไม่มี boundary — backend อ่านไฟล์ไม่เจอแล้วตอบ 200 เฉยๆ
+// โดยไม่บันทึกรูป ต้องถอด header ทิ้งเพื่อให้เบราว์เซอร์ใส่ boundary ให้เอง
+export function stripJsonContentTypeForFormData(
+  config: InternalAxiosRequestConfig,
+): InternalAxiosRequestConfig {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type')
+  }
+  return config
+}
+
 // Backend wraps every successful response as
 // { success, message, data, timestamp, statusCode } — unwrap to the payload
 // so callers can parse `data` directly as the resource shape.
@@ -84,6 +96,7 @@ function createApiClient(baseURL: string | undefined): AxiosInstance {
   })
 
   client.interceptors.request.use(attachAuthHeader)
+  client.interceptors.request.use(stripJsonContentTypeForFormData)
   client.interceptors.response.use(unwrapEnvelope)
   client.interceptors.response.use(
     (response) => response,

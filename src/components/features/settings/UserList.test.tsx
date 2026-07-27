@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import * as usersApi from '@/lib/api/users'
@@ -67,7 +67,17 @@ const users: usersApi.User[] = [
 beforeEach(() => {
   jest.clearAllMocks()
   jest.mocked(usersApi.getUsers).mockResolvedValue(users)
-  jest.mocked(wardsApi.getWards).mockResolvedValue([])
+  jest.mocked(wardsApi.getWards).mockResolvedValue([
+    {
+      id: 'w-1',
+      wardName: 'ICU',
+      wardSeq: 1,
+      type: 'NEW',
+      hosId: 'h-1',
+      createAt: '2026-07-01T00:00:00Z',
+      updateAt: '2026-07-01T00:00:00Z',
+    },
+  ])
 })
 
 describe('UserList', () => {
@@ -102,10 +112,51 @@ describe('UserList', () => {
     renderWithClient(<UserList />)
 
     await screen.findByText('somchai')
-    await user.type(screen.getByRole('searchbox', { name: 'ค้นหาผู้ใช้' }), 'malee')
+    await user.type(
+      screen.getByRole('searchbox', { name: 'ค้นหาผู้ใช้' }),
+      'malee',
+    )
 
     expect(screen.queryByText('somchai')).not.toBeInTheDocument()
     expect(screen.getByText('malee')).toBeInTheDocument()
+  })
+
+  // POST /user รับ JSON เท่านั้น รูปจึงต้องตามไปเป็น PUT อีกครั้งหลังสร้างสำเร็จ
+  it('uploads the picture as a second step after creating a user', async () => {
+    signInAs('SUPER')
+    const created = { ...users[0], id: 'u-new', username: 'newbie' }
+    jest.mocked(usersApi.createUser).mockResolvedValue(created)
+    jest.mocked(usersApi.updateUser).mockResolvedValue(created)
+
+    const user = userEvent.setup()
+    renderWithClient(<UserList />)
+
+    await screen.findByText('somchai')
+    await user.click(screen.getByRole('button', { name: 'เพิ่มผู้ใช้' }))
+
+    const dialog = screen
+      .getByText('เพิ่มผู้ใช้', { selector: 'h3' })
+      .closest('.modal-box') as HTMLElement
+    // ฟอร์มนี้ใช้ <label> แบบไม่ผูก htmlFor จึงหา input ตามลำดับ/ชนิดแทน
+    await user.type(within(dialog).getAllByRole('textbox')[0], 'newbie')
+    await user.type(
+      dialog.querySelector('input[type="password"]') as HTMLElement,
+      'secret',
+    )
+    await user.selectOptions(within(dialog).getAllByRole('combobox')[0], 'w-1')
+
+    const pic = new File(['x'], 'avatar.png', { type: 'image/png' })
+    await user.upload(within(dialog).getByLabelText('รูปโปรไฟล์'), pic)
+    await user.click(within(dialog).getByRole('button', { name: 'บันทึก' }))
+
+    await waitFor(() => expect(usersApi.createUser).toHaveBeenCalled())
+    // ขั้นแรกต้องไม่มีรูปติดไปด้วย ไม่งั้น backend จะไม่รับ
+    expect(
+      jest.mocked(usersApi.createUser).mock.calls[0][0],
+    ).not.toHaveProperty('image')
+    await waitFor(() =>
+      expect(usersApi.updateUser).toHaveBeenCalledWith('u-new', { image: pic }),
+    )
   })
 
   it('does not delete until the confirm dialog is accepted', async () => {

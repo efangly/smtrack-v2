@@ -24,8 +24,8 @@ export function SidebarNav() {
   )
 
   return (
-    <ul className="menu w-full gap-1 px-3 py-2">
-      <li className="menu-title text-xs tracking-wide uppercase">เมนูหลัก</li>
+    <ul className="menu w-full gap-1 px-3 py-2 text-lg">
+      <li className="menu-title text-sm tracking-wide uppercase">เมนูหลัก</li>
 
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon
@@ -37,7 +37,7 @@ export function SidebarNav() {
                 isActive(item.href) ? 'menu-active' : ''
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               {item.label}
             </Link>
           </li>
@@ -49,10 +49,10 @@ export function SidebarNav() {
       <li>
         <details open={isActive(SETTINGS_ITEM.href)}>
           <summary className="gap-3 rounded-lg font-medium">
-            <SettingsIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <SettingsIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="flex-1">{SETTINGS_ITEM.label}</span>
           </summary>
-          <ul>
+          <ul className="text-base">
             {settingsChildren.map((child) => {
               const ChildIcon = child.icon
               return (
@@ -64,7 +64,7 @@ export function SidebarNav() {
                     }`}
                   >
                     <ChildIcon
-                      className="h-4 w-4 shrink-0"
+                      className="h-5 w-5 shrink-0"
                       aria-hidden="true"
                     />
                     {child.label}

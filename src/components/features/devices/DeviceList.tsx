@@ -1,14 +1,16 @@
 'use client'
 
-import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import { ChevronRight, Search } from 'lucide-react'
+import { useState } from 'react'
+import { LayoutGrid, List, Search } from 'lucide-react'
 
 import { useDevices } from '@/hooks/useDevices'
+import { useHospitals } from '@/hooks/useHospitals'
 
-import { DeviceStatusBadge } from './DeviceStatusBadge'
+import { DeviceCard } from './DeviceCard'
+import { DeviceRow } from './DeviceRow'
 
 type StatusFilter = 'all' | 'online' | 'offline'
+type ViewMode = 'list' | 'grid'
 
 const FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -16,25 +18,61 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'offline', label: 'ออฟไลน์' },
 ]
 
+const ALL = 'all'
+
 export function DeviceList() {
   const { data: devices, isLoading, isError } = useDevices()
+  const { data: hospitals } = useHospitals()
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
+  const [hospitalId, setHospitalId] = useState(ALL)
+  const [wardId, setWardId] = useState(ALL)
+  const [view, setView] = useState<ViewMode>('list')
 
-  const filtered = useMemo(() => {
-    if (!devices) return []
-    const needle = keyword.trim().toLowerCase()
+  const selectedHospital = hospitals?.find((hospital) => hospital.id === hospitalId)
+  const wardOptions = [...(selectedHospital?.ward ?? [])].sort(
+    (a, b) => a.wardSeq - b.wardSeq,
+  )
 
-    return devices.filter((device) => {
-      if (status === 'online' && !device.online) return false
-      if (status === 'offline' && device.online) return false
-      if (!needle) return true
+  function handleHospitalChange(nextHospitalId: string) {
+    setHospitalId(nextHospitalId)
+    const nextHospital = hospitals?.find((hospital) => hospital.id === nextHospitalId)
+    const firstWard = [...(nextHospital?.ward ?? [])].sort(
+      (a, b) => a.wardSeq - b.wardSeq,
+    )[0]
+    setWardId(firstWard?.id ?? ALL)
+  }
 
-      return [device.serial, device.ward, device.name, device.staticName]
-        .filter((value): value is string => Boolean(value))
-        .some((value) => value.toLowerCase().includes(needle))
-    })
-  }, [devices, keyword, status])
+  // device.ward (log service) เป็น free text คนละชุดกับ Ward ของ auth service —
+  // ไม่มี wardId/hosId ผูกกับ device จริง จึงกรองด้วยการเทียบ "ชื่อวอร์ด" แบบ
+  // case-insensitive เท่านั้น ไม่ใช่การจับคู่ผ่าน foreign key
+  const selectedWardName = wardOptions.find((ward) => ward.id === wardId)?.wardName
+  const hospitalWardNames = new Set(
+    wardOptions.map((ward) => ward.wardName.toLowerCase()),
+  )
+
+  const needle = keyword.trim().toLowerCase()
+  const filtered = devices
+    ? devices.filter((device) => {
+        if (status === 'online' && !device.online) return false
+        if (status === 'offline' && device.online) return false
+
+        if (hospitalId !== ALL) {
+          const deviceWard = device.ward.trim().toLowerCase()
+          if (wardId !== ALL && selectedWardName) {
+            if (deviceWard !== selectedWardName.trim().toLowerCase()) return false
+          } else if (!hospitalWardNames.has(deviceWard)) {
+            return false
+          }
+        }
+
+        if (!needle) return true
+
+        return [device.serial, device.ward, device.name, device.staticName]
+          .filter((value): value is string => Boolean(value))
+          .some((value) => value.toLowerCase().includes(needle))
+      })
+    : []
 
   if (isLoading) {
     return (
@@ -69,6 +107,35 @@ export function DeviceList() {
           />
         </label>
 
+        <select
+          className="select select-sm select-bordered"
+          aria-label="กรองตามโรงพยาบาล"
+          value={hospitalId}
+          onChange={(event) => handleHospitalChange(event.target.value)}
+        >
+          <option value={ALL}>ALL</option>
+          {hospitals?.map((hospital) => (
+            <option key={hospital.id} value={hospital.id}>
+              {hospital.hosName}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="select select-sm select-bordered"
+          aria-label="กรองตามวอร์ด"
+          value={wardId}
+          disabled={hospitalId === ALL}
+          onChange={(event) => setWardId(event.target.value)}
+        >
+          <option value={ALL}>ALL</option>
+          {wardOptions.map((ward) => (
+            <option key={ward.id} value={ward.id}>
+              {ward.wardName}
+            </option>
+          ))}
+        </select>
+
         <div role="group" aria-label="กรองตามสถานะ" className="join self-start">
           {FILTERS.map((filter) => (
             <button
@@ -84,52 +151,56 @@ export function DeviceList() {
             </button>
           ))}
         </div>
+
+        <div role="group" aria-label="สลับมุมมอง" className="join self-start">
+          <button
+            type="button"
+            className={`btn join-item btn-sm ${view === 'list' ? 'btn-active btn-primary' : ''}`}
+            aria-pressed={view === 'list'}
+            aria-label="มุมมองรายการ"
+            onClick={() => setView('list')}
+          >
+            <List className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`btn join-item btn-sm ${view === 'grid' ? 'btn-active btn-primary' : ''}`}
+            aria-pressed={view === 'grid'}
+            aria-label="มุมมองการ์ด"
+            onClick={() => setView('grid')}
+          >
+            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
         <p className="py-6 text-center text-base-content/60">
           ไม่พบอุปกรณ์ที่ตรงกับเงื่อนไข
         </p>
+      ) : view === 'grid' ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((device) => (
+            <DeviceCard key={device.id} device={device} />
+          ))}
+        </div>
       ) : (
         <div className="overflow-x-auto scrollbar-slim">
           <table className="table-pin-rows table table-zebra">
             <thead>
               <tr>
                 <th>Serial</th>
-                <th>Ward</th>
                 <th>ชื่ออุปกรณ์</th>
+                <th>อุณหภูมิ</th>
+                <th>ความชื้น</th>
+                <th>สัญญาณ / แบตเตอรี่</th>
                 <th>สถานะ</th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {filtered.map((device) => (
-                <tr key={device.id} className="hover">
-                  <td>
-                    <Link
-                      href={`/devices/${encodeURIComponent(device.staticName)}`}
-                      className="link link-primary font-mono"
-                    >
-                      {device.serial ?? '-'}
-                    </Link>
-                  </td>
-                  <td className="text-base-content/70">{device.ward}</td>
-                  <td className="font-medium">
-                    {device.name ?? device.staticName}
-                  </td>
-                  <td>
-                    <DeviceStatusBadge online={device.online} />
-                  </td>
-                  <td className="text-right">
-                    <Link
-                      href={`/devices/${encodeURIComponent(device.staticName)}`}
-                      className="btn btn-ghost btn-xs"
-                      aria-label={`ดูรายละเอียด ${device.name ?? device.staticName}`}
-                    >
-                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                    </Link>
-                  </td>
-                </tr>
+                <DeviceRow key={device.id} device={device} />
               ))}
             </tbody>
           </table>

@@ -1,10 +1,12 @@
 'use client'
 
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { useWards } from '@/hooks/useWards'
 import type { CreateUserInput, UpdateUserInput, User } from '@/lib/api/users'
+import { resolveApiImageUrl } from '@/lib/imageUrl'
 import { ROLE_LABELS, ROLE_OPTIONS } from '@/types/auth'
 
 export interface UserFormDialogHandle {
@@ -12,23 +14,26 @@ export interface UserFormDialogHandle {
 }
 
 // ฟอร์มเดียวใช้ทั้งเพิ่มและแก้ไข แต่ field ต่างกัน: ตอนเพิ่มต้องมีรหัสผ่านและส่งเป็น JSON,
-// ตอนแก้ไขไม่แตะรหัสผ่าน (มี ResetPasswordDialog แยก) แต่แนบรูปโปรไฟล์ได้
-type UserFormValues = CreateUserInput & { image?: FileList }
+// ตอนแก้ไขไม่แตะรหัสผ่าน (มี ResetPasswordDialog แยก)
+type UserFormValues = CreateUserInput & { image?: File | null }
 
 export const UserFormDialog = forwardRef<
   UserFormDialogHandle,
   {
-    onCreate: (dto: CreateUserInput) => void
+    // POST /user รับ JSON เท่านั้น รูปจึงส่งแยกเป็นขั้นที่สอง — ดู UserList
+    onCreate: (dto: CreateUserInput, image?: File) => void
     onUpdate: (id: string, dto: UpdateUserInput) => void
     isSubmitting?: boolean
   }
 >(function UserFormDialog({ onCreate, onUpdate, isSubmitting }, ref) {
   const dialogRef = useRef<HTMLDialogElement>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  // เก็บทั้ง user ไม่ใช่แค่ id เพราะต้องใช้ pic เดิมมาแสดงเป็น preview
+  const [editing, setEditing] = useState<User | null>(null)
   const { data: wards } = useWards()
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -36,7 +41,7 @@ export const UserFormDialog = forwardRef<
 
   useImperativeHandle(ref, () => ({
     open: (user) => {
-      setEditingId(user?.id ?? null)
+      setEditing(user ?? null)
       reset(
         user
           ? {
@@ -47,8 +52,9 @@ export const UserFormDialog = forwardRef<
               display: user.display ?? undefined,
               comment: user.comment ?? undefined,
               password: undefined,
+              image: null,
             }
-          : { status: true, role: 'USER' },
+          : { status: true, role: 'USER', image: null },
       )
       dialogRef.current?.showModal()
     },
@@ -56,12 +62,11 @@ export const UserFormDialog = forwardRef<
 
   const submit = handleSubmit((values) => {
     const { image, password, ...shared } = values
-    if (editingId) {
+    if (editing) {
       // ไม่ส่ง password ในเส้นทางแก้ไข — การตั้งรหัสใหม่ทำผ่าน ResetPasswordDialog
-      const file = image?.[0]
-      onUpdate(editingId, { ...shared, ...(file ? { image: file } : {}) })
+      onUpdate(editing.id, { ...shared, ...(image ? { image } : {}) })
     } else {
-      onCreate({ ...shared, password })
+      onCreate({ ...shared, password }, image ?? undefined)
     }
     dialogRef.current?.close()
   })
@@ -70,7 +75,7 @@ export const UserFormDialog = forwardRef<
     <dialog ref={dialogRef} className="modal">
       <div className="modal-box max-w-2xl">
         <h3 className="text-lg font-bold">
-          {editingId ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้'}
+          {editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้'}
         </h3>
         <form onSubmit={submit} noValidate className="mt-4 flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -94,7 +99,7 @@ export const UserFormDialog = forwardRef<
               </span>
             </div>
 
-            {!editingId && (
+            {!editing && (
               <div className="form-control">
                 <label className="label-text mb-1 block text-xs">
                   รหัสผ่าน *
@@ -172,19 +177,19 @@ export const UserFormDialog = forwardRef<
               />
             </div>
 
-            {editingId && (
-              <div className="form-control">
-                <label className="label-text mb-1 block text-xs">
-                  รูปโปรไฟล์
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="file-input file-input-sm file-input-bordered w-full"
-                  {...register('image')}
+            <Controller
+              control={control}
+              name="image"
+              render={({ field }) => (
+                <ImageUploadField
+                  label="รูปโปรไฟล์"
+                  currentUrl={resolveApiImageUrl(editing?.pic)}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  size={72}
                 />
-              </div>
-            )}
+              )}
+            />
 
             <label className="flex items-center gap-2 text-sm">
               <input
