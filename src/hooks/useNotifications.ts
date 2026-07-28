@@ -3,11 +3,12 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { getNotifications } from '@/lib/api/notifications'
+import type { PaginationQuery } from '@/lib/api/pagination'
 
-export function useNotifications(serial: string) {
+export function useNotifications(serial: string, params: PaginationQuery = {}) {
   return useQuery({
-    queryKey: ['notifications', serial],
-    queryFn: () => getNotifications(serial),
+    queryKey: ['notifications', serial, params],
+    queryFn: () => getNotifications(serial, params),
     enabled: !!serial,
   })
 }

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { apiClient } from '@/lib/apiClient'
+import type { PaginationQuery } from '@/lib/api/pagination'
 import { isMonthString } from '@/lib/utils'
 
 export const BackupMonthSchema = z.object({
@@ -37,8 +38,10 @@ function assertMonthString(month: string): void {
   }
 }
 
-export async function getBackupMonths(): Promise<BackupMonth[]> {
-  const { data } = await apiClient.get('/backup/months')
+export async function getBackupMonths(
+  params: PaginationQuery = {},
+): Promise<BackupMonth[]> {
+  const { data } = await apiClient.get('/backup/months', { params })
   return z.array(BackupMonthSchema).parse(data)
 }
 

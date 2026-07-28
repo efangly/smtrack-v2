@@ -19,6 +19,9 @@ export function SidebarNav() {
 
   // ก่อน hydrate ยังไม่รู้ role (token อ่านจาก localStorage) — โชว์เฉพาะเมนูที่ทุกคน
   // เห็นได้ ไม่งั้น markup ฝั่ง server กับ client จะไม่ตรงกัน
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.can || (hydrated && item.can(role)),
+  )
   const settingsChildren = (SETTINGS_ITEM.children ?? []).filter(
     (child) => !child.can || (hydrated && child.can(role)),
   )
@@ -27,7 +30,7 @@ export function SidebarNav() {
     <ul className="menu w-full gap-1 px-3 py-2 text-lg">
       <li className="menu-title text-sm tracking-wide uppercase">เมนูหลัก</li>
 
-      {NAV_ITEMS.map((item) => {
+      {visibleNavItems.map((item) => {
         const Icon = item.icon
         return (
           <li key={item.href}>

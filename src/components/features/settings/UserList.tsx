@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { KeyRound, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
 import { Avatar } from '@/components/ui/Avatar'
@@ -9,8 +9,10 @@ import {
   ConfirmDialog,
   type ConfirmDialogHandle,
 } from '@/components/ui/ConfirmDialog'
+import { Pagination } from '@/components/ui/Pagination'
 import { useCreateUser } from '@/hooks/useCreateUser'
 import { useDeleteUser } from '@/hooks/useDeleteUser'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useResetPassword } from '@/hooks/useResetPassword'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useUsers } from '@/hooks/useUsers'
@@ -18,6 +20,7 @@ import type { CreateUserInput } from '@/lib/api/users'
 import { resolveApiImageUrl } from '@/lib/imageUrl'
 import { canManageUsers } from '@/lib/permissions'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 import { ROLE_LABELS, ROLE_OPTIONS, type Role } from '@/types/auth'
 
 import {
@@ -27,8 +30,9 @@ import {
 import { UserFormDialog, type UserFormDialogHandle } from './UserFormDialog'
 
 export function UserList() {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageUsers(role)
+  const canManage = hydrated && canManageUsers(role)
 
   const { data: users, isLoading, isError } = useUsers()
   const createUser = useCreateUser()
@@ -43,6 +47,7 @@ export function UserList() {
 
   const [keyword, setKeyword] = useState('')
   const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
+  const { page, limit, setPage, setLimit } = usePaginationParams()
 
   // POST /user รับ JSON เท่านั้น (handler ไม่อ่าน FormFile) รูปจึงต้องอัปโหลด
   // เป็นขั้นที่สองผ่าน PUT /user/:id หลังสร้างผู้ใช้สำเร็จแล้ว
@@ -64,6 +69,15 @@ export function UserList() {
         .some((value) => value.toLowerCase().includes(needle))
     })
   }, [users, keyword, roleFilter])
+
+  // เปลี่ยนตัวกรองแล้วต้องกลับไปหน้า 1 เสมอ ไม่งั้นอาจค้างอยู่หน้าที่เกินผลลัพธ์ใหม่
+  useEffect(() => {
+    if (page !== 1) setPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, roleFilter])
+
+  const totalItems = filtered.length
+  const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
   if (isLoading) return <span className="loading loading-spinner loading-md" />
   if (isError) return <p className="text-error">ไม่สามารถโหลดรายการผู้ใช้ได้</p>
@@ -133,7 +147,7 @@ export function UserList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((user) => (
+              {paged.map((user) => (
                 <tr key={user.id}>
                   <td>
                     <div className="flex items-center gap-2">
@@ -197,6 +211,14 @@ export function UserList() {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        limit={limit}
+        totalItems={totalItems}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
 
       <UserFormDialog
         ref={formDialogRef}

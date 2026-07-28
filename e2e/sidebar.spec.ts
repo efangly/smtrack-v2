@@ -10,8 +10,12 @@ test('sidebar renders nav links and highlights the active route on desktop', asy
 
   await expect(page.getByRole('link', { name: 'ภาพรวม' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'การแจ้งเตือน' })).toBeVisible()
+  // ผู้ใช้ทดสอบ (E2E_ADMIN_USERNAME) ต้องมี role ผ่าน canManageDevices ถึงจะเห็น 2 เมนูนี้
   await expect(
-    page.getByRole('link', { name: 'Backup / Archive' }),
+    page.getByRole('link', { name: 'แจ้งซ่อม', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'จัดการประกัน', exact: true }),
   ).toBeVisible()
 
   await page.getByRole('link', { name: 'การแจ้งเตือน' }).click()

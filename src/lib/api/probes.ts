@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { apiClient } from '@/lib/apiClient'
+import type { PaginationQuery } from '@/lib/api/pagination'
 
 export const DaySchema = z.enum([
   'OFF',
@@ -77,9 +78,13 @@ export const ProbeInputSchema = z.object({
 })
 export type ProbeInput = z.infer<typeof ProbeInputSchema>
 
-export async function getProbes(deviceId: string): Promise<Probe[]> {
+export async function getProbes(
+  deviceId: string,
+  params: PaginationQuery = {},
+): Promise<Probe[]> {
   const { data } = await apiClient.get(
     `/devices/${encodeURIComponent(deviceId)}/probes`,
+    { params },
   )
   return z.array(ProbeSchema).parse(data)
 }

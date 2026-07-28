@@ -40,6 +40,7 @@
   --chart-axis: #c3c2b7;
   --chart-series-temp: #2a78d6;
   --chart-series-humidity: #eb6834;
+  --chart-series-door: #1f9d55;
 }
 
 /* ธีมถูก stamp ลง <html data-theme> ก่อน paint เสมอ (ดู inline script ใน layout.tsx)
@@ -53,6 +54,7 @@
   --chart-axis: #383835;
   --chart-series-temp: #3987e5;
   --chart-series-humidity: #d95926;
+  --chart-series-door: #34c759;
 }
 
 /* ---------- shell utilities ---------- */

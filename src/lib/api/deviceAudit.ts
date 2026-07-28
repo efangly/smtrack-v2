@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { apiClient } from '@/lib/apiClient'
+import type { PaginationQuery } from '@/lib/api/pagination'
 
 export const DeviceAuditSchema = z.object({
   id: z.string(),
@@ -17,9 +18,11 @@ export type DeviceAudit = z.infer<typeof DeviceAuditSchema>
 
 export async function getDeviceAudit(
   staticName: string,
+  params: PaginationQuery = {},
 ): Promise<DeviceAudit[]> {
   const { data } = await apiClient.get(
     `/devices/by-name/${encodeURIComponent(staticName)}/audit`,
+    { params },
   )
   return z.array(DeviceAuditSchema).parse(data)
 }

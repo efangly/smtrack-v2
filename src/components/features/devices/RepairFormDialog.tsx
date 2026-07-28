@@ -14,13 +14,21 @@ export const RepairFormDialog = forwardRef<
   {
     onSubmit: (id: string | null, dto: UpdateRepairInput) => void
     isSubmitting?: boolean
+    /** โชว์ช่อง serial ในฟอร์ม — ใช้ตอนแจ้งซ่อมจากหน้ารวมทุกอุปกรณ์ที่ไม่มี serial context ผูกอยู่แล้ว */
+    showSerialField?: boolean
+    /** ตัวเลือกอุปกรณ์สำหรับ datalist ของช่อง serial (ต้องส่งมาพร้อม showSerialField) */
+    serialOptions?: { serial: string; devName: string; label: string }[]
   }
->(function RepairFormDialog({ onSubmit, isSubmitting }, ref) {
+>(function RepairFormDialog(
+  { onSubmit, isSubmitting, showSerialField, serialOptions = [] },
+  ref,
+) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const { register, handleSubmit, reset } = useForm<UpdateRepairInput>({
-    defaultValues: {},
-  })
+  const { register, handleSubmit, reset, setValue } =
+    useForm<UpdateRepairInput>({
+      defaultValues: {},
+    })
 
   useImperativeHandle(ref, () => ({
     open: (repair) => {
@@ -28,6 +36,7 @@ export const RepairFormDialog = forwardRef<
       reset(
         repair
           ? {
+              serial: repair.serial ?? undefined,
               devName: repair.devName ?? undefined,
               detail: repair.detail ?? undefined,
               address: repair.address ?? undefined,
@@ -47,6 +56,11 @@ export const RepairFormDialog = forwardRef<
     dialogRef.current?.close()
   })
 
+  const handleSerialChange = (value: string) => {
+    const matched = serialOptions.find((option) => option.serial === value)
+    if (matched) setValue('devName', matched.devName)
+  }
+
   return (
     <dialog ref={dialogRef} className="modal">
       <div className="modal-box max-w-2xl">
@@ -55,6 +69,29 @@ export const RepairFormDialog = forwardRef<
         </h3>
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
+            {showSerialField && (
+              <div className="form-control sm:col-span-2">
+                <label className="label-text mb-1 block text-xs">
+                  อุปกรณ์ (serial)
+                </label>
+                <input
+                  className="input input-sm input-bordered w-full font-mono"
+                  list="repair-serial-suggestions"
+                  disabled={Boolean(editingId)}
+                  {...register('serial', {
+                    required: 'กรุณาเลือกอุปกรณ์',
+                    onChange: (event) => handleSerialChange(event.target.value),
+                  })}
+                />
+                <datalist id="repair-serial-suggestions">
+                  {serialOptions.map((option) => (
+                    <option key={option.serial} value={option.serial}>
+                      {option.label}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
+            )}
             <div className="form-control sm:col-span-2">
               <label className="label-text mb-1 block text-xs">
                 รายละเอียดปัญหา
@@ -108,9 +145,7 @@ export const RepairFormDialog = forwardRef<
               />
             </div>
             <div className="form-control">
-              <label className="label-text mb-1 block text-xs">
-                หมายเหตุ
-              </label>
+              <label className="label-text mb-1 block text-xs">หมายเหตุ</label>
               <input
                 className="input input-sm input-bordered w-full"
                 {...register('remark')}

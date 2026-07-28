@@ -1,14 +1,17 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pencil, Plus, Search } from 'lucide-react'
 
 import { Badge } from '@/components/ui/Badge'
+import { Pagination } from '@/components/ui/Pagination'
 import { useCreateDevice } from '@/hooks/useCreateDevice'
 import { useDevices } from '@/hooks/useDevices'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useUpdateDevice } from '@/hooks/useUpdateDevice'
 import { canManageDevices } from '@/lib/permissions'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 
 import {
   DeviceFormDialog,
@@ -16,8 +19,9 @@ import {
 } from './DeviceFormDialog'
 
 export function DeviceSettingsList() {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageDevices(role)
+  const canManage = hydrated && canManageDevices(role)
 
   const { data: devices, isLoading, isError } = useDevices()
   const createDevice = useCreateDevice()
@@ -25,6 +29,7 @@ export function DeviceSettingsList() {
 
   const formDialogRef = useRef<DeviceFormDialogHandle>(null)
   const [keyword, setKeyword] = useState('')
+  const { page, limit, setPage, setLimit } = usePaginationParams()
 
   // `ward` ของ log service เป็น free text ที่ไม่ผูกกับตารางวอร์ดของ auth service
   // จึงรวบรวมค่าที่ใช้อยู่จริงมาเป็นตัวช่วยเติมคำในฟอร์มแทนการให้เลือกจากรายการ
@@ -45,8 +50,18 @@ export function DeviceSettingsList() {
     )
   }, [devices, keyword])
 
+  // เปลี่ยนคำค้นแล้วต้องกลับไปหน้า 1 เสมอ ไม่งั้นอาจค้างอยู่หน้าที่เกินผลลัพธ์ใหม่
+  useEffect(() => {
+    if (page !== 1) setPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword])
+
+  const totalItems = filtered.length
+  const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
+
   if (isLoading) return <span className="loading loading-spinner loading-md" />
-  if (isError) return <p className="text-error">ไม่สามารถโหลดทะเบียนอุปกรณ์ได้</p>
+  if (isError)
+    return <p className="text-error">ไม่สามารถโหลดทะเบียนอุปกรณ์ได้</p>
 
   return (
     <div className="flex flex-col gap-3">
@@ -96,7 +111,7 @@ export function DeviceSettingsList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((device) => (
+              {paged.map((device) => (
                 <tr key={device.id}>
                   <td className="font-mono">{device.serial ?? '-'}</td>
                   <td className="font-mono">{device.staticName}</td>
@@ -126,6 +141,14 @@ export function DeviceSettingsList() {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        limit={limit}
+        totalItems={totalItems}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
 
       <DeviceFormDialog
         ref={formDialogRef}

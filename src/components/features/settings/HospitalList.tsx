@@ -1,19 +1,22 @@
 'use client'
 
-import { useRef } from 'react'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
 import {
   ConfirmDialog,
   type ConfirmDialogHandle,
 } from '@/components/ui/ConfirmDialog'
+import { Pagination } from '@/components/ui/Pagination'
 import { useCreateHospital } from '@/hooks/useCreateHospital'
 import { useDeleteHospital } from '@/hooks/useDeleteHospital'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useHospitals } from '@/hooks/useHospitals'
 import { useUpdateHospital } from '@/hooks/useUpdateHospital'
 import { HOS_TYPE_LABELS } from '@/lib/api/hospitals'
 import { canDeleteHospital, canManageHospitals } from '@/lib/permissions'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 
 import {
   HospitalFormDialog,
@@ -21,9 +24,10 @@ import {
 } from './HospitalFormDialog'
 
 export function HospitalList() {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageHospitals(role)
-  const canDelete = canDeleteHospital(role)
+  const canManage = hydrated && canManageHospitals(role)
+  const canDelete = hydrated && canDeleteHospital(role)
 
   const { data: hospitals, isLoading, isError } = useHospitals()
   const createHospital = useCreateHospital()
@@ -33,6 +37,29 @@ export function HospitalList() {
   const formDialogRef = useRef<HospitalFormDialogHandle>(null)
   const deleteDialogRef = useRef<ConfirmDialogHandle>(null)
   const targetIdRef = useRef<string>('')
+  const [keyword, setKeyword] = useState('')
+  const { page, limit, setPage, setLimit } = usePaginationParams()
+
+  const filtered = useMemo(() => {
+    if (!hospitals) return []
+    const needle = keyword.trim().toLowerCase()
+    if (!needle) return hospitals
+
+    return hospitals.filter((hospital) =>
+      [hospital.hosName, hospital.userContact, hospital.userTel]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => value.toLowerCase().includes(needle)),
+    )
+  }, [hospitals, keyword])
+
+  // เปลี่ยนคำค้นแล้วต้องกลับไปหน้า 1 เสมอ ไม่งั้นอาจค้างอยู่หน้าที่เกินผลลัพธ์ใหม่
+  useEffect(() => {
+    if (page !== 1) setPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword])
+
+  const totalItems = filtered.length
+  const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
   if (isLoading) return <span className="loading loading-spinner loading-md" />
   if (isError)
@@ -40,19 +67,37 @@ export function HospitalList() {
 
   return (
     <div className="flex flex-col gap-3">
-      {canManage && (
-        <button
-          type="button"
-          className="btn btn-primary btn-sm self-start"
-          onClick={() => formDialogRef.current?.open()}
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          เพิ่มโรงพยาบาล
-        </button>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
+          <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
+          <input
+            type="search"
+            className="grow"
+            placeholder="ค้นหาชื่อโรงพยาบาล / ผู้ติดต่อ"
+            aria-label="ค้นหาโรงพยาบาล"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+        </label>
+
+        {canManage && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => formDialogRef.current?.open()}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            เพิ่มโรงพยาบาล
+          </button>
+        )}
+      </div>
 
       {!hospitals || hospitals.length === 0 ? (
         <p className="text-base-content/60">ยังไม่มีโรงพยาบาลในระบบ</p>
+      ) : filtered.length === 0 ? (
+        <p className="py-6 text-center text-base-content/60">
+          ไม่พบโรงพยาบาลที่ตรงกับเงื่อนไข
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="table table-sm">
@@ -67,7 +112,7 @@ export function HospitalList() {
               </tr>
             </thead>
             <tbody>
-              {hospitals.map((hospital) => (
+              {paged.map((hospital) => (
                 <tr key={hospital.id}>
                   <td>{hospital.hosSeq}</td>
                   <td className="font-medium">{hospital.hosName}</td>
@@ -113,6 +158,14 @@ export function HospitalList() {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        limit={limit}
+        totalItems={totalItems}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
 
       <HospitalFormDialog
         ref={formDialogRef}

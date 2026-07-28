@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { apiClient } from '@/lib/apiClient'
+import type { PaginationQuery } from '@/lib/api/pagination'
 
 export const NotificationSchema = z.object({
   id: z.string(),
@@ -17,9 +18,11 @@ export type Notification = z.infer<typeof NotificationSchema>
 
 export async function getNotifications(
   serial: string,
+  params: PaginationQuery = {},
 ): Promise<Notification[]> {
   const { data } = await apiClient.get(
     `/notifications/${encodeURIComponent(serial)}`,
+    { params },
   )
   return z.array(NotificationSchema).parse(data)
 }

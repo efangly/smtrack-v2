@@ -7,14 +7,18 @@ import {
   type ConfirmDialogHandle,
 } from '@/components/ui/ConfirmDialog'
 import { Badge } from '@/components/ui/Badge'
+import { Pagination } from '@/components/ui/Pagination'
 import { useBackupMonths } from '@/hooks/useBackupMonths'
 import { useExportMonth } from '@/hooks/useExportMonth'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useRestoreMonth } from '@/hooks/useRestoreMonth'
 import { useRemoveRestore } from '@/hooks/useRemoveRestore'
 import { formatBytes } from '@/lib/utils'
 
 export function BackupMonthsTable() {
-  const { data, isLoading, isError } = useBackupMonths()
+  const { page, limit, setPage, setLimit } = usePaginationParams()
+  const { data, isLoading, isError } = useBackupMonths({ page, limit })
+  const hasNextPage = (data?.length ?? 0) === limit
   const exportMonth = useExportMonth()
   const restoreMonth = useRestoreMonth()
   const removeRestore = useRemoveRestore()
@@ -27,8 +31,21 @@ export function BackupMonthsTable() {
   if (isLoading) return <span className="loading loading-spinner loading-md" />
   if (isError)
     return <p className="text-error">ไม่สามารถโหลดรายการ backup ได้</p>
-  if (!data || data.length === 0)
-    return <p className="text-base-content/60">ยังไม่มีข้อมูล backup</p>
+  if (!data || data.length === 0) {
+    // หน้าหลังๆ อาจว่างได้ถ้า backend คืนหน้าว่างมา — ต้องยังกด "ก่อนหน้า" กลับไปได้
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-base-content/60">ยังไม่มีข้อมูล backup</p>
+        <Pagination
+          page={page}
+          limit={limit}
+          hasNextPage={hasNextPage}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="overflow-x-auto">
@@ -88,6 +105,15 @@ export function BackupMonthsTable() {
           ))}
         </tbody>
       </table>
+
+      <Pagination
+        page={page}
+        limit={limit}
+        hasNextPage={hasNextPage}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+        className="mt-3"
+      />
 
       <ConfirmDialog
         ref={exportDialogRef}

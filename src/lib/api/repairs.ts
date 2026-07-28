@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { apiClient } from '@/lib/apiClient'
+import type { PaginationQuery } from '@/lib/api/pagination'
 
 export const RepairSchema = z.object({
   id: z.string(),
@@ -39,9 +40,20 @@ export const CreateRepairSchema = z.object({
 export type CreateRepairInput = z.infer<typeof CreateRepairSchema>
 export type UpdateRepairInput = Partial<CreateRepairInput>
 
-export async function getRepairsBySerial(serial: string): Promise<Repair[]> {
+export async function getRepairs(
+  params: PaginationQuery = {},
+): Promise<Repair[]> {
+  const { data } = await apiClient.get('/repairs', { params })
+  return z.array(RepairSchema).parse(data)
+}
+
+export async function getRepairsBySerial(
+  serial: string,
+  params: PaginationQuery = {},
+): Promise<Repair[]> {
   const { data } = await apiClient.get(
     `/repairs/by-serial/${encodeURIComponent(serial)}`,
+    { params },
   )
   return z.array(RepairSchema).parse(data)
 }

@@ -28,7 +28,7 @@ export function SidebarBrand() {
       />
 
       <div className="min-w-0">
-        <Link href="/" className="block truncate font-semibold">
+        <Link href="/" className="block truncate font-semibold text-xl">
           SMtrack Dashboard
         </Link>
         <span className="block truncate text-xs text-base-content/50">

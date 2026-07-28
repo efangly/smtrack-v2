@@ -5,8 +5,10 @@ import {
   Cpu,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
   UserCircle,
   Users,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -32,7 +34,13 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'ภาพรวม', icon: LayoutDashboard },
   { href: '/devices', label: 'อุปกรณ์', icon: Cpu },
   { href: '/notifications', label: 'การแจ้งเตือน', icon: Bell },
-  { href: '/backup', label: 'Backup / Archive', icon: Archive },
+  { href: '/repairs', label: 'แจ้งซ่อม', icon: Wrench, can: canManageDevices },
+  {
+    href: '/warranty',
+    label: 'จัดการประกัน',
+    icon: ShieldCheck,
+    can: canManageDevices,
+  },
 ]
 
 export const SETTINGS_ITEM: NavItem = {
@@ -64,6 +72,11 @@ export const SETTINGS_ITEM: NavItem = {
       label: 'จัดการอุปกรณ์',
       icon: Cpu,
       can: canManageDevices,
+    },
+    {
+      href: '/settings/backup',
+      label: 'Backup / Archive',
+      icon: Archive,
     },
   ],
 }

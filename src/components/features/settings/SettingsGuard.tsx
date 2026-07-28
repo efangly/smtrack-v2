@@ -19,6 +19,8 @@ const CHECKS: Record<string, (role: Role | undefined | null) => boolean> = {
   wards: canManageWards,
   hospitals: canManageHospitals,
   devices: canManageDevices,
+  repairs: canManageDevices,
+  warranty: canManageDevices,
 }
 
 export type SettingsPermission = keyof typeof CHECKS

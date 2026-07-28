@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 
 import { Card } from '@/components/ui/Card'
 import { DeviceInfoCard } from '@/components/features/devices/DeviceInfoCard'
@@ -50,10 +51,15 @@ export default async function DeviceDetailPage({
     <div className="flex flex-col gap-6">
       <DeviceInfoCard
         device={device}
-        action={<SwapDeviceDialog staticName={device.staticName} />}
+        action={
+          <div className="flex gap-2">
+            <SwapDeviceDialog staticName={device.staticName} />
+            <DeviceConfigPanel deviceId={device.id} />
+          </div>
+        }
       />
 
-      <Card title="กราฟอุณหภูมิ/ความชื้น">
+      <Card title="กราฟอุณหภูมิ/ความชื้น/ประตู">
         <TelemetryGraph serial={serial} />
       </Card>
 
@@ -72,23 +78,27 @@ export default async function DeviceDetailPage({
         title="การแจ้งเตือน"
         action={<NotificationLiveFeed serial={serial} />}
       >
-        <NotificationList serial={serial} />
-      </Card>
-
-      <Card title="การตั้งค่าอุปกรณ์">
-        <DeviceConfigPanel deviceId={device.id} />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <NotificationList serial={serial} />
+        </Suspense>
       </Card>
 
       <Card title="โพรบ">
-        <ProbeList deviceId={device.id} />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <ProbeList deviceId={device.id} />
+        </Suspense>
       </Card>
 
       <Card title="ประวัติการซ่อม">
-        <RepairList serial={serial} />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <RepairList serial={serial} />
+        </Suspense>
       </Card>
 
       <Card title="ประวัติการแก้ไข">
-        <DeviceAuditTable staticName={device.staticName} />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <DeviceAuditTable staticName={device.staticName} />
+        </Suspense>
       </Card>
     </div>
   )

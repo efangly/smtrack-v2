@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LayoutGrid, List, Search } from 'lucide-react'
 
+import { Pagination } from '@/components/ui/Pagination'
 import { useDevices } from '@/hooks/useDevices'
 import { useHospitals } from '@/hooks/useHospitals'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 
 import { DeviceCard } from './DeviceCard'
 import { DeviceRow } from './DeviceRow'
@@ -28,15 +30,20 @@ export function DeviceList() {
   const [hospitalId, setHospitalId] = useState(ALL)
   const [wardId, setWardId] = useState(ALL)
   const [view, setView] = useState<ViewMode>('list')
+  const { page, limit, setPage, setLimit } = usePaginationParams()
 
-  const selectedHospital = hospitals?.find((hospital) => hospital.id === hospitalId)
+  const selectedHospital = hospitals?.find(
+    (hospital) => hospital.id === hospitalId,
+  )
   const wardOptions = [...(selectedHospital?.ward ?? [])].sort(
     (a, b) => a.wardSeq - b.wardSeq,
   )
 
   function handleHospitalChange(nextHospitalId: string) {
     setHospitalId(nextHospitalId)
-    const nextHospital = hospitals?.find((hospital) => hospital.id === nextHospitalId)
+    const nextHospital = hospitals?.find(
+      (hospital) => hospital.id === nextHospitalId,
+    )
     const firstWard = [...(nextHospital?.ward ?? [])].sort(
       (a, b) => a.wardSeq - b.wardSeq,
     )[0]
@@ -46,7 +53,9 @@ export function DeviceList() {
   // device.ward (log service) เป็น free text คนละชุดกับ Ward ของ auth service —
   // ไม่มี wardId/hosId ผูกกับ device จริง จึงกรองด้วยการเทียบ "ชื่อวอร์ด" แบบ
   // case-insensitive เท่านั้น ไม่ใช่การจับคู่ผ่าน foreign key
-  const selectedWardName = wardOptions.find((ward) => ward.id === wardId)?.wardName
+  const selectedWardName = wardOptions.find(
+    (ward) => ward.id === wardId,
+  )?.wardName
   const hospitalWardNames = new Set(
     wardOptions.map((ward) => ward.wardName.toLowerCase()),
   )
@@ -60,7 +69,8 @@ export function DeviceList() {
         if (hospitalId !== ALL) {
           const deviceWard = device.ward.trim().toLowerCase()
           if (wardId !== ALL && selectedWardName) {
-            if (deviceWard !== selectedWardName.trim().toLowerCase()) return false
+            if (deviceWard !== selectedWardName.trim().toLowerCase())
+              return false
           } else if (!hospitalWardNames.has(deviceWard)) {
             return false
           }
@@ -73,6 +83,15 @@ export function DeviceList() {
           .some((value) => value.toLowerCase().includes(needle))
       })
     : []
+
+  // เปลี่ยนตัวกรอง/คำค้นแล้วต้องกลับไปหน้า 1 เสมอ ไม่งั้นอาจค้างอยู่หน้าที่เกินผลลัพธ์ใหม่
+  useEffect(() => {
+    if (page !== 1) setPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, status, hospitalId, wardId])
+
+  const totalItems = filtered.length
+  const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
   if (isLoading) {
     return (
@@ -180,7 +199,7 @@ export function DeviceList() {
         </p>
       ) : view === 'grid' ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((device) => (
+          {paged.map((device) => (
             <DeviceCard key={device.id} device={device} />
           ))}
         </div>
@@ -199,13 +218,21 @@ export function DeviceList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((device) => (
+              {paged.map((device) => (
                 <DeviceRow key={device.id} device={device} />
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        limit={limit}
+        totalItems={totalItems}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
 
       <p className="text-xs text-base-content/50">
         แสดง {filtered.length} จาก {devices.length} อุปกรณ์ · อัปเดตอัตโนมัติทุก

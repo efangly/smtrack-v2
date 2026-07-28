@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { SettingsGuard } from '@/components/features/settings/SettingsGuard'
 import { UserList } from '@/components/features/settings/UserList'
@@ -13,7 +14,9 @@ export default function SettingsUsersPage() {
         title="รายการผู้ใช้งานทั้งหมด"
         description="ขอบเขตข้อมูลที่เห็นถูกจำกัดตามสิทธิ์ของบัญชีที่ใช้งานอยู่"
       >
-        <UserList />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <UserList />
+        </Suspense>
       </Card>
     </SettingsGuard>
   )

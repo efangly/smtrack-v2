@@ -5,13 +5,15 @@ import { useForm } from 'react-hook-form'
 import { Repeat } from 'lucide-react'
 
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 import { canManageDevices } from '@/lib/permissions'
 import { useSwapDevice } from '@/hooks/useSwapDevice'
 import type { SwapDeviceInput } from '@/lib/api/devices'
 
 export function SwapDeviceDialog({ staticName }: { staticName: string }) {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageDevices(role)
+  const canManage = hydrated && canManageDevices(role)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const swapDevice = useSwapDevice(staticName)
 

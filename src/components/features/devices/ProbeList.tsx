@@ -7,20 +7,33 @@ import {
   ConfirmDialog,
   type ConfirmDialogHandle,
 } from '@/components/ui/ConfirmDialog'
+import { Pagination } from '@/components/ui/Pagination'
 import { useProbes } from '@/hooks/useProbes'
 import { useCreateProbe } from '@/hooks/useCreateProbe'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useUpdateProbe } from '@/hooks/useUpdateProbe'
 import { useDeleteProbe } from '@/hooks/useDeleteProbe'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 import { canManageDevices } from '@/lib/permissions'
 
 import { ProbeFormDialog, type ProbeFormDialogHandle } from './ProbeFormDialog'
 
 export function ProbeList({ deviceId }: { deviceId: string }) {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageDevices(role)
+  const canManage = hydrated && canManageDevices(role)
 
-  const { data: probes, isLoading, isError } = useProbes(deviceId)
+  const { page, limit, setPage, setLimit } = usePaginationParams('probes')
+  const {
+    data: probes,
+    isLoading,
+    isError,
+  } = useProbes(deviceId, {
+    page,
+    limit,
+  })
+  const hasNextPage = (probes?.length ?? 0) === limit
   const createProbe = useCreateProbe(deviceId)
   const updateProbe = useUpdateProbe(deviceId)
   const deleteProbe = useDeleteProbe(deviceId)
@@ -103,6 +116,14 @@ export function ProbeList({ deviceId }: { deviceId: string }) {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        limit={limit}
+        hasNextPage={hasNextPage}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
 
       <ProbeFormDialog
         ref={formDialogRef}

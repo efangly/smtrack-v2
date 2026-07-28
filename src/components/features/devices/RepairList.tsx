@@ -3,10 +3,13 @@
 import { useRef } from 'react'
 import { Plus } from 'lucide-react'
 
+import { Pagination } from '@/components/ui/Pagination'
 import { useRepairs } from '@/hooks/useRepairs'
 import { useCreateRepair } from '@/hooks/useCreateRepair'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useUpdateRepair } from '@/hooks/useUpdateRepair'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 import { canManageDevices } from '@/lib/permissions'
 
 import {
@@ -15,14 +18,19 @@ import {
 } from './RepairFormDialog'
 
 export function RepairList({ serial }: { serial: string }) {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageDevices(role)
+  const canManage = hydrated && canManageDevices(role)
 
-  const { data: repairs, isLoading, isError } = useRepairs(
-    canManage ? serial : '',
-  )
-  const createRepair = useCreateRepair(serial)
-  const updateRepair = useUpdateRepair(serial)
+  const { page, limit, setPage, setLimit } = usePaginationParams('repairs')
+  const {
+    data: repairs,
+    isLoading,
+    isError,
+  } = useRepairs(canManage ? serial : '', { page, limit })
+  const hasNextPage = (repairs?.length ?? 0) === limit
+  const createRepair = useCreateRepair()
+  const updateRepair = useUpdateRepair()
   const formDialogRef = useRef<RepairFormDialogHandle>(null)
 
   if (!canManage) {
@@ -34,7 +42,8 @@ export function RepairList({ serial }: { serial: string }) {
   }
 
   if (isLoading) return <span className="loading loading-spinner loading-md" />
-  if (isError) return <p className="text-error">ไม่สามารถโหลดประวัติการซ่อมได้</p>
+  if (isError)
+    return <p className="text-error">ไม่สามารถโหลดประวัติการซ่อมได้</p>
 
   return (
     <div className="flex flex-col gap-3">
@@ -83,6 +92,14 @@ export function RepairList({ serial }: { serial: string }) {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        limit={limit}
+        hasNextPage={hasNextPage}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
 
       <RepairFormDialog
         ref={formDialogRef}

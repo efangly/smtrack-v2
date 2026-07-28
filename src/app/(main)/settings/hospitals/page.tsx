@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { HospitalList } from '@/components/features/settings/HospitalList'
 import { SettingsGuard } from '@/components/features/settings/SettingsGuard'
@@ -10,7 +11,9 @@ export default function SettingsHospitalsPage() {
   return (
     <SettingsGuard permission="hospitals">
       <Card title="รายการโรงพยาบาลทั้งหมด">
-        <HospitalList />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <HospitalList />
+        </Suspense>
       </Card>
     </SettingsGuard>
   )

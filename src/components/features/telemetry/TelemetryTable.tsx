@@ -21,7 +21,9 @@ export function TelemetryTable({ serial }: { serial: string }) {
             <th>อุณหภูมิ</th>
             <th>ความชื้น</th>
             <th>แบตเตอรี่</th>
-            <th>ประตู</th>
+            <th>ประตู 1</th>
+            <th>ประตู 2</th>
+            <th>ประตู 3</th>
             <th>อินเทอร์เน็ต</th>
           </tr>
         </thead>
@@ -32,7 +34,9 @@ export function TelemetryTable({ serial }: { serial: string }) {
               <td>{row.tempDisplay.toFixed(1)}°C</td>
               <td>{row.humidityDisplay.toFixed(1)}%</td>
               <td>{row.battery}%</td>
-              <td>{row.door1 || row.door2 || row.door3 ? 'เปิด' : 'ปิด'}</td>
+              <td>{row.door1 ? 'เปิด' : 'ปิด'}</td>
+              <td>{row.door2 ? 'เปิด' : 'ปิด'}</td>
+              <td>{row.door3 ? 'เปิด' : 'ปิด'}</td>
               <td>{row.internet ? 'เชื่อมต่อ' : 'ขาดการเชื่อมต่อ'}</td>
             </tr>
           ))}

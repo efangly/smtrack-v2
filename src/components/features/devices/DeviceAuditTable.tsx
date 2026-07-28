@@ -1,18 +1,24 @@
 'use client'
 
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 import { canManageDevices } from '@/lib/permissions'
 import { useDeviceAudit } from '@/hooks/useDeviceAudit'
+import { usePaginationParams } from '@/hooks/usePaginationParams'
+import { Pagination } from '@/components/ui/Pagination'
 
 export function DeviceAuditTable({ staticName }: { staticName: string }) {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageDevices(role)
+  const canManage = hydrated && canManageDevices(role)
 
+  const { page, limit, setPage, setLimit } = usePaginationParams('audit')
   const {
     data: audit,
     isLoading,
     isError,
-  } = useDeviceAudit(canManage ? staticName : '')
+  } = useDeviceAudit(canManage ? staticName : '', { page, limit })
+  const hasNextPage = (audit?.length ?? 0) === limit
 
   if (!canManage) {
     return (
@@ -29,34 +35,44 @@ export function DeviceAuditTable({ staticName }: { staticName: string }) {
     return <p className="text-base-content/60">ยังไม่มีประวัติการแก้ไข</p>
 
   return (
-    <div className="overflow-x-auto">
-      <table className="table table-sm">
-        <thead>
-          <tr>
-            <th>เวลา</th>
-            <th>การกระทำ</th>
-            <th>ผู้ดำเนินการ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {audit.map((entry) => (
-            <tr key={entry.id}>
-              <td className="whitespace-nowrap">
-                {new Date(entry.createAt).toLocaleString('th-TH')}
-              </td>
-              <td>{entry.action}</td>
-              <td>
-                {entry.actorName ?? entry.actorId ?? '-'}
-                {entry.actorRole && (
-                  <span className="ml-1 text-xs text-base-content/50">
-                    ({entry.actorRole})
-                  </span>
-                )}
-              </td>
+    <div className="flex flex-col gap-3">
+      <div className="overflow-x-auto">
+        <table className="table table-sm">
+          <thead>
+            <tr>
+              <th>เวลา</th>
+              <th>การกระทำ</th>
+              <th>ผู้ดำเนินการ</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {audit.map((entry) => (
+              <tr key={entry.id}>
+                <td className="whitespace-nowrap">
+                  {new Date(entry.createAt).toLocaleString('th-TH')}
+                </td>
+                <td>{entry.action}</td>
+                <td>
+                  {entry.actorName ?? entry.actorId ?? '-'}
+                  {entry.actorRole && (
+                    <span className="ml-1 text-xs text-base-content/50">
+                      ({entry.actorRole})
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination
+        page={page}
+        limit={limit}
+        hasNextPage={hasNextPage}
+        onPageChange={setPage}
+        onLimitChange={setLimit}
+      />
     </div>
   )
 }

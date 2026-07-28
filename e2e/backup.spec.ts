@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test'
 test('backup page renders months table and cancelling the export dialog does not navigate away', async ({
   page,
 }) => {
-  await page.goto('/backup')
+  await page.goto('/settings/backup')
 
   await expect(
-    page.getByRole('heading', { name: 'Backup / Archive' }),
+    page.getByRole('heading', { name: 'ตั้งค่า', exact: true }),
   ).toBeVisible()
   await expect(page.getByText('เดือนที่มีการ backup')).toBeVisible()
 

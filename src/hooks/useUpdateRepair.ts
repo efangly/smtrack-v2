@@ -6,14 +6,16 @@ import toast from 'react-hot-toast'
 import { updateRepair, type UpdateRepairInput } from '@/lib/api/repairs'
 import { ApiError } from '@/lib/apiClient'
 
-export function useUpdateRepair(serial: string) {
+export function useUpdateRepair() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdateRepairInput }) =>
       updateRepair(id, dto),
     onSuccess: () => {
       toast.success('บันทึกใบซ่อมสำเร็จ')
-      queryClient.invalidateQueries({ queryKey: ['repairs', serial] })
+      // ครอบทั้ง cache ต่อ serial (['repairs', serial, ...]) และรายการรวม
+      // (['repairs', 'all', ...]) เพราะ key เป็น prefix match
+      queryClient.invalidateQueries({ queryKey: ['repairs'] })
     },
     onError: (error) => {
       toast.error(

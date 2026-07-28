@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { Trash2 } from 'lucide-react'
+import { Settings, Trash2 } from 'lucide-react'
 
 import {
   ConfirmDialog,
@@ -12,6 +12,7 @@ import { useDeviceConfig } from '@/hooks/useDeviceConfig'
 import { useUpsertDeviceConfig } from '@/hooks/useUpsertDeviceConfig'
 import { useDeleteDeviceConfig } from '@/hooks/useDeleteDeviceConfig'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useHydrated } from '@/hooks/useHydrated'
 import { canManageDevices } from '@/lib/permissions'
 import { ApiError } from '@/lib/apiClient'
 import type { DeviceConfigInput } from '@/lib/api/deviceConfig'
@@ -37,8 +38,9 @@ const TEXT_FIELDS: { key: keyof DeviceConfigInput; label: string }[] = [
 ]
 
 export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
+  const hydrated = useHydrated()
   const role = useAuthStore((state) => state.payload?.role)
-  const canManage = canManageDevices(role)
+  const canManage = hydrated && canManageDevices(role)
 
   const { data: config, isLoading, isError, error } = useDeviceConfig(deviceId)
   const notFound = error instanceof ApiError && error.statusCode === 404
@@ -46,6 +48,7 @@ export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
   const upsert = useUpsertDeviceConfig(deviceId, Boolean(config))
   const remove = useDeleteDeviceConfig(deviceId)
   const deleteDialogRef = useRef<ConfirmDialogHandle>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
 
   const { register, handleSubmit, reset } = useForm<DeviceConfigInput>({
     defaultValues: {},
@@ -64,84 +67,125 @@ export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
     }
   }, [config, reset])
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
-  if (isError && !notFound)
-    return <p className="text-error">ไม่สามารถโหลดการตั้งค่าอุปกรณ์ได้</p>
+  useEffect(() => {
+    if (upsert.isSuccess) {
+      dialogRef.current?.close()
+      upsert.reset()
+    }
+  }, [upsert])
 
   const onSubmit = handleSubmit((values) => upsert.mutate(values))
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      {notFound && (
-        <p className="text-sm text-base-content/60">
-          ยังไม่มีการตั้งค่าสำหรับอุปกรณ์นี้
-        </p>
-      )}
+    <>
+      <button
+        type="button"
+        className="btn btn-outline btn-sm"
+        onClick={() => dialogRef.current?.showModal()}
+      >
+        <Settings className="h-4 w-4" aria-hidden="true" />
+        ตั้งค่าอุปกรณ์
+      </button>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm"
-            disabled={!canManage}
-            {...register('dhcp')}
-          />
-          DHCP (Wi-Fi)
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm"
-            disabled={!canManage}
-            {...register('dhcpEth')}
-          />
-          DHCP (Ethernet)
-        </label>
-      </div>
+      <dialog ref={dialogRef} className="modal">
+        <div className="modal-box max-w-3xl">
+          <h3 className="text-lg font-bold">ตั้งค่าอุปกรณ์</h3>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {TEXT_FIELDS.map((field) => (
-          <div key={field.key} className="form-control">
-            <label
-              className="label-text mb-1 block text-xs"
-              htmlFor={`config-${field.key}`}
-            >
-              {field.label}
-            </label>
-            <input
-              id={`config-${field.key}`}
-              className="input input-sm input-bordered w-full"
-              disabled={!canManage}
-              {...register(field.key)}
-            />
-          </div>
-        ))}
-      </div>
+          {isLoading && (
+            <span className="loading loading-spinner loading-md mt-4" />
+          )}
+          {isError && !notFound && (
+            <p className="mt-4 text-error">
+              ไม่สามารถโหลดการตั้งค่าอุปกรณ์ได้
+            </p>
+          )}
 
-      {canManage && (
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="btn btn-primary btn-sm"
-            disabled={upsert.isPending}
-          >
-            {upsert.isPending && (
-              <span className="loading loading-spinner loading-xs" />
-            )}
-            บันทึกการตั้งค่า
-          </button>
-          {!notFound && (
-            <button
-              type="button"
-              className="btn btn-error btn-outline btn-sm"
-              onClick={() => deleteDialogRef.current?.showModal()}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              ลบการตั้งค่า
-            </button>
+          {!isLoading && (!isError || notFound) && (
+            <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4">
+              {notFound && (
+                <p className="text-sm text-base-content/60">
+                  ยังไม่มีการตั้งค่าสำหรับอุปกรณ์นี้
+                </p>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    disabled={!canManage}
+                    {...register('dhcp')}
+                  />
+                  DHCP (Wi-Fi)
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    disabled={!canManage}
+                    {...register('dhcpEth')}
+                  />
+                  DHCP (Ethernet)
+                </label>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {TEXT_FIELDS.map((field) => (
+                  <div key={field.key} className="form-control">
+                    <label
+                      className="label-text mb-1 block text-xs"
+                      htmlFor={`config-${field.key}`}
+                    >
+                      {field.label}
+                    </label>
+                    <input
+                      id={`config-${field.key}`}
+                      className="input input-sm input-bordered w-full"
+                      disabled={!canManage}
+                      {...register(field.key)}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => dialogRef.current?.close()}
+                >
+                  ปิด
+                </button>
+                {canManage && !notFound && (
+                  <button
+                    type="button"
+                    className="btn btn-error btn-outline"
+                    onClick={() => deleteDialogRef.current?.showModal()}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    ลบการตั้งค่า
+                  </button>
+                )}
+                {canManage && (
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={upsert.isPending}
+                  >
+                    {upsert.isPending && (
+                      <span className="loading loading-spinner loading-xs" />
+                    )}
+                    บันทึกการตั้งค่า
+                  </button>
+                )}
+              </div>
+            </form>
           )}
         </div>
-      )}
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
 
       <ConfirmDialog
         ref={deleteDialogRef}
@@ -151,6 +195,6 @@ export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
         isLoading={remove.isPending}
         onConfirm={() => remove.mutate()}
       />
-    </form>
+    </>
   )
 }

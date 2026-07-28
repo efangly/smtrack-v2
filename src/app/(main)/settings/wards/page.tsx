@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 
 import { SettingsGuard } from '@/components/features/settings/SettingsGuard'
 import { WardList } from '@/components/features/settings/WardList'
@@ -10,7 +11,9 @@ export default function SettingsWardsPage() {
   return (
     <SettingsGuard permission="wards">
       <Card title="รายการวอร์ดทั้งหมด">
-        <WardList />
+        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+          <WardList />
+        </Suspense>
       </Card>
     </SettingsGuard>
   )
