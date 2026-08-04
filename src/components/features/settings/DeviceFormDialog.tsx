@@ -73,7 +73,24 @@ export const DeviceFormDialog = forwardRef<
               installDate: device.hardware?.installDate?.slice(0, 10),
               positionPic: null,
             }
-          : { status: true, seq: 0, positionPic: null },
+          : {
+              // react-hook-form's reset() falls back to the *current* field
+              // value when a key is `undefined` — must pass '' to actually
+              // clear an uncontrolled input, not undefined.
+              serial: '',
+              staticName: '',
+              ward: '',
+              name: '',
+              seq: 0,
+              status: true,
+              firmware: '',
+              location: '',
+              position: '',
+              tag: '',
+              remark: '',
+              installDate: '',
+              positionPic: null,
+            },
       )
       dialogRef.current?.showModal()
     },

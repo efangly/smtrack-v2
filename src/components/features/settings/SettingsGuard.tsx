@@ -21,6 +21,7 @@ const CHECKS: Record<string, (role: Role | undefined | null) => boolean> = {
   devices: canManageDevices,
   repairs: canManageDevices,
   warranty: canManageDevices,
+  firmware: canManageDevices,
 }
 
 export type SettingsPermission = keyof typeof CHECKS

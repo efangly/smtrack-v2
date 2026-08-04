@@ -23,14 +23,14 @@ import {
   type WarrantyFormDialogHandle,
 } from './WarrantyFormDialog'
 
-function daysRemaining(endDate: string): number {
-  const end = new Date(endDate).getTime()
+function daysRemaining(expire: string): number {
+  const end = new Date(expire).getTime()
   const now = new Date().setHours(0, 0, 0, 0)
   return Math.ceil((end - now) / (1000 * 60 * 60 * 24))
 }
 
-function ExpiryBadge({ endDate }: { endDate: string }) {
-  const days = daysRemaining(endDate)
+function ExpiryBadge({ expire }: { expire: string }) {
+  const days = daysRemaining(expire)
   if (days < 0)
     return <span className="badge badge-error badge-sm">หมดประกันแล้ว</span>
   if (days <= 30)
@@ -75,7 +75,12 @@ export function WarrantyList() {
     if (!needle) return warranties
 
     return warranties.filter((warranty) =>
-      [warranty.serial, warranty.devName, warranty.provider]
+      [
+        warranty.serial,
+        warranty.devName,
+        warranty.product,
+        warranty.customerName,
+      ]
         .filter((value): value is string => Boolean(value))
         .some((value) => value.toLowerCase().includes(needle)),
     )
@@ -109,7 +114,7 @@ export function WarrantyList() {
           <input
             type="search"
             className="grow"
-            placeholder="ค้นหา serial / ชื่ออุปกรณ์ / ผู้ให้บริการ"
+            placeholder="ค้นหา serial / ชื่ออุปกรณ์ / สินค้า / ลูกค้า"
             aria-label="ค้นหารายการประกัน"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -138,8 +143,9 @@ export function WarrantyList() {
             <thead>
               <tr>
                 <th>อุปกรณ์</th>
-                <th>ผู้ให้บริการ</th>
-                <th>ช่วงเวลาประกัน</th>
+                <th>สินค้า / รุ่น</th>
+                <th>ลูกค้า</th>
+                <th>วันหมดประกัน</th>
                 <th>สถานะ</th>
                 <th className="text-right">การจัดการ</th>
               </tr>
@@ -153,14 +159,17 @@ export function WarrantyList() {
                       {warranty.serial}
                     </div>
                   </td>
-                  <td>{warranty.provider ?? '-'}</td>
+                  <td>
+                    {[warranty.product, warranty.model]
+                      .filter(Boolean)
+                      .join(' / ') || '-'}
+                  </td>
+                  <td>{warranty.customerName ?? '-'}</td>
                   <td className="whitespace-nowrap">
-                    {new Date(warranty.startDate).toLocaleDateString('th-TH')}
-                    {' – '}
-                    {new Date(warranty.endDate).toLocaleDateString('th-TH')}
+                    {new Date(warranty.expire).toLocaleDateString('th-TH')}
                   </td>
                   <td>
-                    <ExpiryBadge endDate={warranty.endDate} />
+                    <ExpiryBadge expire={warranty.expire} />
                   </td>
                   <td className="text-right">
                     <div className="flex justify-end gap-1">

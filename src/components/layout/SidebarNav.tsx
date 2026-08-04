@@ -36,8 +36,10 @@ export function SidebarNav() {
           <li key={item.href}>
             <Link
               href={item.href}
-              className={`gap-3 rounded-lg font-medium ${
-                isActive(item.href) ? 'menu-active' : ''
+              className={`gap-3 rounded-lg border-l-2 font-medium transition-colors ${
+                isActive(item.href)
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-transparent hover:bg-base-200'
               }`}
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -51,7 +53,11 @@ export function SidebarNav() {
 
       <li>
         <details open={isActive(SETTINGS_ITEM.href)}>
-          <summary className="gap-3 rounded-lg font-medium">
+          <summary
+            className={`gap-3 rounded-lg font-medium ${
+              isActive(SETTINGS_ITEM.href) ? 'bg-primary/10 text-primary' : ''
+            }`}
+          >
             <SettingsIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="flex-1">{SETTINGS_ITEM.label}</span>
           </summary>
@@ -62,8 +68,10 @@ export function SidebarNav() {
                 <li key={child.href}>
                   <Link
                     href={child.href}
-                    className={`gap-3 rounded-lg ${
-                      pathname === child.href ? 'menu-active' : ''
+                    className={`gap-3 rounded-lg border-l-2 transition-colors ${
+                      pathname === child.href
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-transparent hover:bg-base-200'
                     }`}
                   >
                     <ChildIcon

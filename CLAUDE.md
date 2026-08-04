@@ -140,7 +140,7 @@ npm test
 
 | Resource | Client | Base URL |
 | --- | --- | --- |
-| อุปกรณ์, โพรบ, ซ่อม, config, telemetry, กราฟ, การแจ้งเตือน, backup | `apiClient` | `NEXT_PUBLIC_API_BASE_URL` |
+| อุปกรณ์, โพรบ, ซ่อม, config, telemetry, กราฟ, การแจ้งเตือน, backup, เฟิร์มแวร์ | `apiClient` | `NEXT_PUBLIC_API_BASE_URL` |
 | login/refresh, ผู้ใช้, วอร์ด, โรงพยาบาล, reset password, health | `authApiClient` | `NEXT_PUBLIC_AUTH_API_BASE_URL` |
 
 - ทั้งสองตัวสร้างจาก `createApiClient` ใน `src/lib/apiClient.ts` แต่ **เฉพาะ `authApiClient` เท่านั้นที่มี 401 auto-refresh**
@@ -151,12 +151,13 @@ npm test
 
 ### เมนูตั้งค่า (`/settings/*`)
 
-- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `users`, `wards`, `hospitals`, `devices` เป็น sub-route
+- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `users`, `wards`, `hospitals`, `devices`, `firmware` เป็น sub-route
 - `<h1>ตั้งค่า</h1>` อยู่ที่ `src/app/(main)/settings/layout.tsx` **ที่เดียว** — หน้าย่อยใส่ได้แค่หัวข้อระดับการ์ด
 - เมนูย่อยประกาศใน `NavItem.children` (`src/components/layout/navItems.ts`) พร้อม `can` predicate ส่วน `SidebarNav` เป็นตัวกรองตาม role (ต้องผ่าน `useHydrated()` ก่อน ไม่งั้น hydration ไม่ตรง)
 - `src/proxy.ts` เช็คแค่ว่ามี token cookie **ไม่ได้เช็ค role** — หน้าที่จำกัดสิทธิ์ต้องครอบด้วย `SettingsGuard` (รับ prop เป็น key ไม่ใช่ function เพราะ page เป็น Server Component ส่ง function ข้าม boundary ไม่ได้)
 - สิทธิ์ใน `src/lib/permissions.ts` ต้องตรงกับ `RolesGuard` ของ smtrack-authentication เสมอ — มี `src/lib/permissions.test.ts` ล็อกตารางนี้ไว้
 - `/settings/devices` เป็นทะเบียนอุปกรณ์ (เพิ่ม/แก้ไข) ส่วน `/devices` ยังเป็นหน้า monitoring เหมือนเดิม — backend ไม่มี endpoint ลบอุปกรณ์
+- `/settings/firmware` จัดการคลังเฟิร์มแวร์ (แยกจาก `hardware.firmware` ที่เป็นเวอร์ชันติดตั้งจริงบนอุปกรณ์แต่ละตัวใน `DeviceFormDialog`) — `version` เป็นค่าคงที่หลังสร้าง (แก้ไม่ได้, backend เมินถ้าส่งไปตอนอัปเดต), อัปโหลดซ้ำ version เดิมได้ 409, ดาวน์โหลดไฟล์ต้องลิงก์ตรงไป `GET /firmware/download/:version` (stream binary ดิบ ไม่ผ่าน `apiClient`/envelope)
 
 ### ⚠️ `device.ward` ไม่ใช่วอร์ดของ auth service
 

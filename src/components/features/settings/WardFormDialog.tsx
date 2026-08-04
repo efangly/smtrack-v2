@@ -44,7 +44,15 @@ export const WardFormDialog = forwardRef<
               type: ward.type ?? undefined,
               hosId: ward.hosId,
             }
-          : { type: 'NEW' },
+          : {
+              // react-hook-form's reset() falls back to the *current* field
+              // value when a key is `undefined` — must pass '' to actually
+              // clear an uncontrolled input, not undefined.
+              wardName: '',
+              wardSeq: 0,
+              type: 'NEW',
+              hosId: '',
+            },
       )
       dialogRef.current?.showModal()
     },

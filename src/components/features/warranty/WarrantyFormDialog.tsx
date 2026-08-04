@@ -33,11 +33,8 @@ export const WarrantyFormDialog = forwardRef<
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<UpdateWarrantyInput>({ defaultValues: {} })
-
-  const startDate = watch('startDate')
 
   useImperativeHandle(ref, () => ({
     open: (warranty) => {
@@ -47,12 +44,18 @@ export const WarrantyFormDialog = forwardRef<
           ? {
               serial: warranty.serial,
               devName: warranty.devName ?? undefined,
-              provider: warranty.provider ?? undefined,
-              startDate: warranty.startDate.slice(0, 10),
-              endDate: warranty.endDate.slice(0, 10),
-              remark: warranty.remark ?? undefined,
+              product: warranty.product ?? undefined,
+              model: warranty.model ?? undefined,
+              installDate: warranty.installDate ?? undefined,
+              customerName: warranty.customerName ?? undefined,
+              customerAddress: warranty.customerAddress ?? undefined,
+              saleDepartment: warranty.saleDepartment ?? undefined,
+              invoice: warranty.invoice ?? undefined,
+              expire: warranty.expire.slice(0, 10),
+              status: warranty.status,
+              note: warranty.note ?? undefined,
             }
-          : {},
+          : { status: true },
       )
       dialogRef.current?.showModal()
     },
@@ -102,57 +105,104 @@ export const WarrantyFormDialog = forwardRef<
             </div>
 
             <div className="form-control">
-              <label className="label-text mb-1 block text-xs">
-                ผู้ให้บริการ
-              </label>
+              <label className="label-text mb-1 block text-xs">สินค้า</label>
               <input
                 className="input input-sm input-bordered w-full"
-                {...register('provider')}
+                {...register('product')}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">รุ่น</label>
+              <input
+                className="input input-sm input-bordered w-full"
+                {...register('model')}
               />
             </div>
 
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">
-                วันเริ่มประกัน *
+                ชื่อลูกค้า
               </label>
               <input
-                type="date"
                 className="input input-sm input-bordered w-full"
-                {...register('startDate', {
-                  required: 'กรุณาเลือกวันเริ่มประกัน',
-                })}
+                {...register('customerName')}
               />
-              <span className="mt-1 text-xs text-error empty:hidden">
-                {errors.startDate?.message}
-              </span>
             </div>
 
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">
-                วันสิ้นสุดประกัน *
+                ที่อยู่ลูกค้า
+              </label>
+              <input
+                className="input input-sm input-bordered w-full"
+                {...register('customerAddress')}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">
+                แผนกขาย
+              </label>
+              <input
+                className="input input-sm input-bordered w-full"
+                {...register('saleDepartment')}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">
+                เลขที่ใบกำกับ
+              </label>
+              <input
+                className="input input-sm input-bordered w-full"
+                {...register('invoice')}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">
+                วันที่ติดตั้ง
               </label>
               <input
                 type="date"
                 className="input input-sm input-bordered w-full"
-                {...register('endDate', {
-                  required: 'กรุณาเลือกวันสิ้นสุดประกัน',
-                  validate: (value) =>
-                    !startDate ||
-                    !value ||
-                    value >= startDate ||
-                    'วันสิ้นสุดต้องไม่ก่อนวันเริ่มประกัน',
+                {...register('installDate')}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label-text mb-1 block text-xs">
+                วันหมดประกัน *
+              </label>
+              <input
+                type="date"
+                className="input input-sm input-bordered w-full"
+                {...register('expire', {
+                  required: 'กรุณาเลือกวันหมดประกัน',
                 })}
               />
               <span className="mt-1 text-xs text-error empty:hidden">
-                {errors.endDate?.message}
+                {errors.expire?.message}
               </span>
+            </div>
+
+            <div className="form-control">
+              <label className="label cursor-pointer justify-start gap-2 px-0">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm"
+                  {...register('status')}
+                />
+                <span className="label-text text-xs">ใช้งานอยู่</span>
+              </label>
             </div>
 
             <div className="form-control sm:col-span-2">
               <label className="label-text mb-1 block text-xs">หมายเหตุ</label>
               <input
                 className="input input-sm input-bordered w-full"
-                {...register('remark')}
+                {...register('note')}
               />
             </div>
           </div>

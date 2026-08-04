@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Settings,
   ShieldCheck,
+  UploadCloud,
   UserCircle,
   Users,
   Wrench,
@@ -71,6 +72,12 @@ export const SETTINGS_ITEM: NavItem = {
       href: '/settings/devices',
       label: 'จัดการอุปกรณ์',
       icon: Cpu,
+      can: canManageDevices,
+    },
+    {
+      href: '/settings/firmware',
+      label: 'เฟิร์มแวร์',
+      icon: UploadCloud,
       can: canManageDevices,
     },
     {

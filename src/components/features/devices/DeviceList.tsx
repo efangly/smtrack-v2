@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { LayoutGrid, List, Search } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Pagination } from '@/components/ui/Pagination'
 import { useDevices } from '@/hooks/useDevices'
@@ -31,6 +32,9 @@ export function DeviceList() {
   const [wardId, setWardId] = useState(ALL)
   const [view, setView] = useState<ViewMode>('list')
   const { page, limit, setPage, setLimit } = usePaginationParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const selectedHospital = hospitals?.find(
     (hospital) => hospital.id === hospitalId,
@@ -51,14 +55,19 @@ export function DeviceList() {
   }
 
   // device.ward (log service) เป็น free text คนละชุดกับ Ward ของ auth service —
-  // ไม่มี wardId/hosId ผูกกับ device จริง จึงกรองด้วยการเทียบ "ชื่อวอร์ด" แบบ
-  // case-insensitive เท่านั้น ไม่ใช่การจับคู่ผ่าน foreign key
-  const selectedWardName = wardOptions.find(
-    (ward) => ward.id === wardId,
-  )?.wardName
-  const hospitalWardNames = new Set(
-    wardOptions.map((ward) => ward.wardName.toLowerCase()),
-  )
+  // ไม่มี wardId/hosId ผูกกับ device จริง ข้อมูลเก่าเก็บเป็น "ชื่อวอร์ด" แต่ข้อมูล
+  // ที่ migrate มาใหม่บางส่วนกลับเก็บ wardId (เช่น "WID-xxxx") ลงในฟิลด์เดียวกัน
+  // จึงต้องเทียบกับได้ทั้ง id และชื่อ (case-insensitive) ไม่ใช่ชื่ออย่างเดียว
+  function matchesWard(
+    device: NonNullable<typeof devices>[number],
+    ward: (typeof wardOptions)[number],
+  ) {
+    const deviceWard = device.ward.trim().toLowerCase()
+    return (
+      deviceWard === ward.id.toLowerCase() ||
+      deviceWard === ward.wardName.trim().toLowerCase()
+    )
+  }
 
   const needle = keyword.trim().toLowerCase()
   const filtered = devices
@@ -67,11 +76,11 @@ export function DeviceList() {
         if (status === 'offline' && device.online) return false
 
         if (hospitalId !== ALL) {
-          const deviceWard = device.ward.trim().toLowerCase()
-          if (wardId !== ALL && selectedWardName) {
-            if (deviceWard !== selectedWardName.trim().toLowerCase())
+          if (wardId !== ALL) {
+            const selectedWard = wardOptions.find((ward) => ward.id === wardId)
+            if (!selectedWard || !matchesWard(device, selectedWard))
               return false
-          } else if (!hospitalWardNames.has(deviceWard)) {
+          } else if (!wardOptions.some((ward) => matchesWard(device, ward))) {
             return false
           }
         }
@@ -89,6 +98,29 @@ export function DeviceList() {
     if (page !== 1) setPage(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, status, hospitalId, wardId])
+
+  // sync ward filter ขึ้น URL (ไม่แตะ page/limit ที่ sync ผ่าน usePaginationParams
+  // อยู่แล้ว): ไม่เลือกโรงพยาบาล = ไม่ส่ง ward, เลือกโรงพยาบาลแต่ ward เป็น ALL =
+  // ส่งทุกวอร์ดของโรงพยาบาลนั้นเป็น query ซ้ำ key เดียวกัน, เลือก ward เจาะจง = ส่งค่าเดียว
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams)
+    params.delete('ward')
+
+    if (hospitalId !== ALL) {
+      if (wardId === ALL) {
+        wardOptions.forEach((ward) => params.append('ward', ward.id))
+      } else {
+        params.set('ward', wardId)
+      }
+    }
+
+    const query = params.toString()
+    if (query === searchParams.toString()) return
+
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    })
+  }, [hospitalId, wardId, wardOptions, router, pathname, searchParams])
 
   const totalItems = filtered.length
   const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)

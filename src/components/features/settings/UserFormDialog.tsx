@@ -54,7 +54,19 @@ export const UserFormDialog = forwardRef<
               password: undefined,
               image: null,
             }
-          : { status: true, role: 'USER', image: null },
+          : {
+              // react-hook-form's reset() falls back to the *current* field
+              // value when a key is `undefined` — must pass '' to actually
+              // clear an uncontrolled input, not undefined.
+              username: '',
+              wardId: '',
+              role: 'USER',
+              status: true,
+              display: '',
+              comment: '',
+              password: '',
+              image: null,
+            },
       )
       dialogRef.current?.showModal()
     },

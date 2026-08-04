@@ -18,7 +18,7 @@ export function Card({
 
   return (
     <div
-      className={`card border border-base-300 bg-base-100 shadow-sm ${className}`}
+      className={`card surface-card ${className}`}
     >
       <div className="card-body gap-4 p-4 md:p-5">
         {hasHeader && (

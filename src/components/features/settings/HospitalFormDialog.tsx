@@ -62,7 +62,20 @@ export const HospitalFormDialog = forwardRef<
               hosLongitude: hospital.hosLongitude ?? undefined,
               hosType: hospital.hosType,
             }
-          : { hosType: 'HOSPITAL' },
+          : {
+              // react-hook-form's reset() falls back to the *current* field
+              // value when a key is `undefined` — must pass '' to actually
+              // clear an uncontrolled input, not undefined.
+              hosName: '',
+              hosSeq: 0,
+              hosAddress: '',
+              hosTel: '',
+              userContact: '',
+              userTel: '',
+              hosLatitude: '',
+              hosLongitude: '',
+              hosType: 'HOSPITAL',
+            },
       )
       dialogRef.current?.showModal()
     },

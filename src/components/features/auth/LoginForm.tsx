@@ -31,7 +31,7 @@ export function LoginForm() {
       const result = await login(values)
       storeLogin(result)
       toast.success('เข้าสู่ระบบสำเร็จ')
-      router.push('/')
+      router.replace('/')
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'เข้าสู่ระบบไม่สำเร็จ'

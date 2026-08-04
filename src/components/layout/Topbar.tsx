@@ -21,7 +21,7 @@ export function Topbar() {
   const title = getPageTitle(pathname)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-base-300 bg-base-100/85 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-base-300 bg-base-100/85 shadow-sm backdrop-blur">
       <div className="flex h-14 items-center gap-2 px-3 md:px-6">
         <label
           htmlFor="main-drawer"

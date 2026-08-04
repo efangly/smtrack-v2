@@ -25,7 +25,7 @@ export function StatCard({
   loading?: boolean
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-box border border-base-300 bg-base-100 p-4 shadow-sm">
+    <div className="flex items-center gap-4 rounded-box surface-card p-4">
       <span
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${TONE_CLASS[tone]}`}
       >

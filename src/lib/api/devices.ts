@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { apiClient } from '@/lib/apiClient'
 import { toFormData } from '@/lib/api/formData'
+import { fetchAllPages } from '@/lib/api/pagination'
 
 // อุปกรณ์ (จุดติดตั้ง) กับกล่องฮาร์ดแวร์จริงถูกแยกเป็นคนละ entity ใน backend —
 // `hardware` เป็น relation ที่อาจไม่มีถ้าจุดติดตั้งนี้ยังไม่เคยเสียบกล่องใดเลย
@@ -83,8 +84,10 @@ export const SwapDeviceResultSchema = z.object({
 export type SwapDeviceResult = z.infer<typeof SwapDeviceResultSchema>
 
 export async function getDevices(): Promise<Device[]> {
-  const { data } = await apiClient.get('/devices')
-  return z.array(DeviceSchema).parse(data)
+  return fetchAllPages(async (params) => {
+    const { data } = await apiClient.get('/devices', { params })
+    return z.array(DeviceSchema).parse(data)
+  })
 }
 
 export async function getDevice(serial: string): Promise<Device> {

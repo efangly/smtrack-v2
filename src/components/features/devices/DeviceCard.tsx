@@ -22,7 +22,7 @@ export function DeviceCard({ device }: { device: Device }) {
   const href = `/devices/${encodeURIComponent(device.staticName)}`
 
   return (
-    <div className="flex flex-col gap-3 rounded-box border border-base-300 bg-base-100 p-4 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-box surface-card p-4">
       <div className="flex items-start justify-between gap-2">
         <Link href={href} className="min-w-0">
           <p className="truncate font-medium hover:underline">

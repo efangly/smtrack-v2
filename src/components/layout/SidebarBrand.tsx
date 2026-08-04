@@ -14,7 +14,7 @@ export function SidebarBrand() {
   const logoUrl = hydrated ? resolveApiImageUrl(hospital?.hosPic) : null
 
   return (
-    <div className="flex items-center gap-3 border-b border-base-300 px-5 py-4">
+    <div className="flex items-center gap-3 border-b border-base-300 bg-linear-to-b from-primary/5 to-transparent px-5 py-4">
       <Avatar
         src={logoUrl}
         alt={hospital?.hosName ?? 'โลโก้โรงพยาบาล'}

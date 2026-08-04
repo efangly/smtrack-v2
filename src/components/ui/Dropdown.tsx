@@ -50,10 +50,8 @@ export function Dropdown({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => {
-          setOpen((previous) => {
-            if (!previous) onOpen?.()
-            return !previous
-          })
+          if (!open) onOpen?.()
+          setOpen((previous) => !previous)
         }}
       >
         {trigger}
