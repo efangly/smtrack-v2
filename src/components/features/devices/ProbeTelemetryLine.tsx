@@ -1,6 +1,6 @@
 'use client'
 
-import { Cable, DoorClosed, DoorOpen, Unplug } from 'lucide-react'
+import { Cable, DoorClosed, DoorOpen, Thermometer, Unplug } from 'lucide-react'
 
 import type { ProbeTelemetry } from '@/lib/api/probes'
 
@@ -47,6 +47,20 @@ export function ProbeDoorIcons({ probe }: { probe: ProbeTelemetry }) {
 
 // อุปกรณ์ออนไลน์แต่ probe นี้ไม่มีข้อมูล temp ล่าสุดส่งมา = probe มีปัญหาหรือหลุดการเชื่อมต่อ
 // ถ้าอุปกรณ์ออฟไลน์อยู่แล้วไม่สามารถสรุปสถานะ probe ได้ ให้ถือเป็น muted แทนการฟันธงว่าหลุด
+function probeStatusTone(probe: ProbeTelemetry, online: boolean): Tone {
+  const hasData = probe.tempDisplay !== null
+  return !online ? 'muted' : hasData ? 'success' : 'error'
+}
+
+function probeStatusLabel(probe: ProbeTelemetry, online: boolean): string {
+  const hasData = probe.tempDisplay !== null
+  return !online
+    ? 'ไม่ทราบสถานะ probe (อุปกรณ์ออฟไลน์)'
+    : hasData
+      ? 'probe เชื่อมต่อและส่งข้อมูลปกติ'
+      : 'probe มีปัญหาหรือหลุดการเชื่อมต่อ'
+}
+
 export function ProbeStatusIcon({
   probe,
   online,
@@ -54,21 +68,50 @@ export function ProbeStatusIcon({
   probe: ProbeTelemetry
   online: boolean
 }) {
-  const hasData = probe.tempDisplay !== null
-  const tone: Tone = !online ? 'muted' : hasData ? 'success' : 'error'
+  const tone = probeStatusTone(probe, online)
   const StatusIcon = tone === 'error' ? Unplug : Cable
 
   return (
     <StatusIcon
       className={`h-4 w-4 ${TONE_CLASS[tone]}`}
-      aria-label={
-        !online
-          ? 'ไม่ทราบสถานะ probe (อุปกรณ์ออฟไลน์)'
-          : hasData
-            ? 'probe เชื่อมต่อและส่งข้อมูลปกติ'
-            : 'probe มีปัญหาหรือหลุดการเชื่อมต่อ'
-      }
+      aria-label={probeStatusLabel(probe, online)}
     />
+  )
+}
+
+// สีของ icon Thermometer สื่อสถานะ active ของ probe แทน (เขียว/แดง/เทา) — ไม่ต้องมี
+// ProbeStatusIcon (Cable/Unplug) แยกอยู่ข้าง ๆ wifi/battery อีกคอลัมน์
+export function ProbeInfoLine({
+  probe,
+  online,
+}: {
+  probe: ProbeTelemetry
+  online: boolean
+}) {
+  const tone = probeStatusTone(probe, online)
+
+  return (
+    <div className="flex h-5 items-center gap-2 text-sm">
+      <Thermometer
+        className={`h-4 w-4 shrink-0 ${TONE_CLASS[tone]}`}
+        aria-label={probeStatusLabel(probe, online)}
+      />
+      <span className="min-w-0 truncate">
+        <span className="text-base-content/40">CH{probe.channel}</span>{' '}
+        {probe.name ?? `Probe ${probe.channel}`}
+        {probe.type && <span className="ml-1 text-base-content/40">({probe.type})</span>}
+      </span>
+    </div>
+  )
+}
+
+export function ProbeTempHumiLine({ probe }: { probe: ProbeTelemetry }) {
+  return (
+    <div className="flex h-5 items-center tabular-nums">
+      {probe.tempDisplay !== null ? `${probe.tempDisplay}°C` : '—'}
+      {' / '}
+      {probe.humidityDisplay !== null ? `${probe.humidityDisplay}%` : '—'}
+    </div>
   )
 }
 

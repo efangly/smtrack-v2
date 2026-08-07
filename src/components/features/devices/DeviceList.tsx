@@ -271,8 +271,9 @@ export function DeviceList() {
               <tr>
                 <th>Serial</th>
                 <th>ชื่ออุปกรณ์</th>
-                <th>อุณหภูมิ</th>
-                <th>ความชื้น</th>
+                <th>Probe</th>
+                <th>อุณหภูมิ/ความชื้น</th>
+                <th>ประตู</th>
                 <th>สัญญาณ / แบตเตอรี่</th>
                 <th>สถานะ</th>
                 <th />

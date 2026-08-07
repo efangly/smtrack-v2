@@ -9,7 +9,7 @@ import { useDeviceProbeTelemetry } from '@/hooks/useDeviceProbeTelemetry'
 
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 import { DeviceTelemetryIcons } from './DeviceTelemetryIcons'
-import { ProbeDoorIcons, ProbeStatusIcon, ProbeTelemetryLine } from './ProbeTelemetryLine'
+import { ProbeDoorIcons, ProbeInfoLine, ProbeTempHumiLine } from './ProbeTelemetryLine'
 
 export function DeviceRow({ device }: { device: Device }) {
   const { data: telemetry } = useLatestTelemetry(device.serial)
@@ -27,47 +27,54 @@ export function DeviceRow({ device }: { device: Device }) {
       </td>
       <td className="font-medium">{device.name ?? '-'}</td>
       {multiProbe ? (
-        <td colSpan={2} className="tabular-nums">
-          <div className="flex flex-col gap-1 text-base-content/80">
-            {multiProbe.map((probe) => (
-              <ProbeTelemetryLine
-                key={probe.id}
-                probe={probe}
-                showLabel
-                online={device.online}
-              />
-            ))}
-          </div>
-        </td>
+        <>
+          <td>
+            <div className="flex flex-col gap-1 text-base-content/80">
+              {multiProbe.map((probe) => (
+                <ProbeInfoLine key={probe.id} probe={probe} online={device.online} />
+              ))}
+            </div>
+          </td>
+          <td className="tabular-nums">
+            <div className="flex flex-col gap-1 text-base-content/80">
+              {multiProbe.map((probe) => (
+                <ProbeTempHumiLine key={probe.id} probe={probe} />
+              ))}
+            </div>
+          </td>
+          <td>
+            <div className="flex flex-col gap-1">
+              {multiProbe.map((probe) => (
+                <div key={probe.id} className="flex h-5 items-center">
+                  <ProbeDoorIcons probe={probe} />
+                </div>
+              ))}
+            </div>
+          </td>
+        </>
       ) : (
         <>
-          <td className="tabular-nums">
-            {probesLoading
-              ? '…'
-              : singleProbe?.tempDisplay !== undefined && singleProbe?.tempDisplay !== null
-                ? `${singleProbe.tempDisplay}°C`
-                : '—'}
+          <td>
+            {singleProbe && (
+              <ProbeInfoLine probe={singleProbe} online={device.online} />
+            )}
           </td>
           <td className="tabular-nums">
             {probesLoading
               ? '…'
-              : singleProbe?.humidityDisplay !== undefined &&
-                  singleProbe?.humidityDisplay !== null
-                ? `${singleProbe.humidityDisplay}%`
+              : singleProbe
+                ? `${singleProbe.tempDisplay !== null ? `${singleProbe.tempDisplay}°C` : '—'} / ${
+                    singleProbe.humidityDisplay !== null
+                      ? `${singleProbe.humidityDisplay}%`
+                      : '—'
+                  }`
                 : '—'}
           </td>
+          <td>{singleProbe && <ProbeDoorIcons probe={singleProbe} />}</td>
         </>
       )}
       <td>
-        <div className="flex items-center gap-3">
-          {singleProbe && (
-            <>
-              <ProbeStatusIcon probe={singleProbe} online={device.online} />
-              <ProbeDoorIcons probe={singleProbe} />
-            </>
-          )}
-          <DeviceTelemetryIcons telemetry={telemetry} />
-        </div>
+        <DeviceTelemetryIcons telemetry={telemetry} />
       </td>
       <td>
         <DeviceStatusBadge online={device.online} />
