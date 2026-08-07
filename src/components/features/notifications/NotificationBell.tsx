@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { Bell, BellOff } from 'lucide-react'
 
 import { Dropdown } from '@/components/ui/Dropdown'
-import { LiveStatus } from '@/components/ui/LiveStatus'
 import { classifyNotification, TONE_CLASS } from '@/lib/notificationType'
 import { formatDateTime, formatTimeShort } from '@/lib/utils'
 import { useMarkAllNotificationsRead } from '@/hooks/useNotifications'
@@ -13,7 +12,6 @@ import { useNotificationFeedStore } from '@/store/useNotificationFeedStore'
 export function NotificationBell() {
   const items = useNotificationFeedStore((state) => state.items)
   const unreadCount = useNotificationFeedStore((state) => state.unreadCount)
-  const status = useNotificationFeedStore((state) => state.status)
   const markAllRead = useMarkAllNotificationsRead()
 
   return (
@@ -37,7 +35,6 @@ export function NotificationBell() {
           <div className="flex items-center justify-between border-b border-base-300 px-4 py-3">
             {/* ห้ามใช้คำว่า "การแจ้งเตือนล่าสุด" ซ้ำกับหัวการ์ดในหน้าภาพรวม */}
             <span className="font-semibold">ศูนย์การแจ้งเตือน</span>
-            <LiveStatus status={status} />
           </div>
 
           {items.length === 0 ? (

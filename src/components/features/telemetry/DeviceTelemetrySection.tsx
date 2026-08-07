@@ -58,6 +58,13 @@ export function DeviceTelemetrySection({
   if (hasMultipleProbes) {
     return (
       <div className="flex flex-col gap-6">
+        {/* ตัวบอกสถานะ live ของทั้ง section — ต้องอยู่นอกลูป probe เพราะ
+            TelemetryLiveFeed ผูกกับ serial ไม่ใช่ probe (ทุกตัวรับ stream เดียวกัน)
+            เรนเดอร์ซ้ำต่อ probe ก็ได้แค่ subscriber ซ้ำและป้ายสถานะซ้ำเปล่า ๆ */}
+        <div className="flex justify-end">
+          <TelemetryLiveFeed serial={serial} />
+        </div>
+
         {probes!.map((probe) => {
           const label = probe.name ? ` — ${probe.name}` : ''
           return (
@@ -71,13 +78,12 @@ export function DeviceTelemetrySection({
                   probeId={probe.id}
                   from={from}
                   to={to}
+                  tempMin={probe.tempMin}
+                  tempMax={probe.tempMax}
                 />
               </Card>
 
-              <Card
-                title={`ข้อมูล telemetry ล่าสุด${label}`}
-                action={<TelemetryLiveFeed serial={serial} />}
-              >
+              <Card title={`ข้อมูล telemetry ล่าสุด${label}`}>
                 <TelemetryTable
                   serial={serial}
                   probeId={probe.id}
@@ -100,6 +106,8 @@ export function DeviceTelemetrySection({
           probeId={probes?.[0]?.id}
           from={from}
           to={to}
+          tempMin={probes?.[0]?.tempMin}
+          tempMax={probes?.[0]?.tempMax}
         />
       </Card>
 

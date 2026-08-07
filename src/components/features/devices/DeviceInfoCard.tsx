@@ -5,6 +5,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { resolveDeviceImageUrl } from '@/lib/imageUrl'
 
+import { DeviceInfoStats } from './DeviceInfoStats'
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 
 export function DeviceInfoCard({
@@ -18,7 +19,15 @@ export function DeviceInfoCard({
   const title = device.name ?? '-'
 
   return (
-    <Card title={title} action={action}>
+    <Card
+      title={title}
+      action={
+        <div className="flex items-center gap-2">
+          <DeviceStatusBadge online={device.online} variant="pill" />
+          {action}
+        </div>
+      }
+    >
       {/* รูปอยู่ซ้าย รายละเอียดอยู่ขวา — บนจอเล็กวางซ้อนกันตามปกติ */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         {positionPicUrl && (
@@ -50,15 +59,11 @@ export function DeviceInfoCard({
             <dd>{device.position ?? '-'}</dd>
           </div>
           <div>
-            <dt className="text-base-content/60">สถานะ</dt>
-            <dd>
-              <DeviceStatusBadge online={device.online} />
-            </dd>
-          </div>
-          <div>
             <dt className="text-base-content/60">หมายเหตุ</dt>
             <dd>{device.remark ?? '-'}</dd>
           </div>
+
+          <DeviceInfoStats device={device} />
         </dl>
       </div>
     </Card>

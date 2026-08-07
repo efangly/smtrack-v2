@@ -4,13 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { LayoutGrid, List, Search } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { LiveStatus } from '@/components/ui/LiveStatus'
 import { Pagination } from '@/components/ui/Pagination'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useDevices } from '@/hooks/useDevices'
 import { useHospitals } from '@/hooks/useHospitals'
 import { usePaginationParams } from '@/hooks/usePaginationParams'
-import { useNotificationFeedStore } from '@/store/useNotificationFeedStore'
 
 import { DeviceCard } from './DeviceCard'
 import { DeviceRow } from './DeviceRow'
@@ -42,9 +40,6 @@ export function DeviceList() {
     isError,
   } = useDevices({ search: debouncedKeyword || undefined })
   const { data: hospitals } = useHospitals()
-  // สถานะ connection ของ RealtimeFeedProvider (SSE เดียวกับ notification) — ใช้บอกผู้ใช้
-  // ว่าสถานะ online/offline ในตารางกำลังอัปเดตแบบเรียลไทม์อยู่หรือไม่
-  const liveStatus = useNotificationFeedStore((state) => state.status)
   const [status, setStatus] = useState<StatusFilter>('all')
   const [hospitalId, setHospitalId] = useState(ALL)
   const [wardId, setWardId] = useState(ALL)
@@ -269,13 +264,13 @@ export function DeviceList() {
           <table className="table-pin-rows table table-zebra">
             <thead>
               <tr>
-                <th>Serial</th>
+                <th className="min-w-[120px]">Serial</th>
                 <th>ชื่ออุปกรณ์</th>
                 <th>Probe</th>
                 <th>อุณหภูมิ/ความชื้น</th>
                 <th>ประตู</th>
                 <th>สัญญาณ / แบตเตอรี่</th>
-                <th>สถานะ</th>
+                <th className="text-center">ออนไลน์</th>
                 <th />
               </tr>
             </thead>
@@ -296,12 +291,8 @@ export function DeviceList() {
         onLimitChange={setLimit}
       />
 
-      <p className="flex items-center gap-2 text-xs text-base-content/50">
-        <span>
-          แสดง {filtered.length} จาก {devices?.length ?? 0} อุปกรณ์
-        </span>
-        <span aria-hidden="true">·</span>
-        <LiveStatus status={liveStatus} />
+      <p className="text-xs text-base-content/50">
+        แสดง {filtered.length} จาก {devices?.length ?? 0} อุปกรณ์
       </p>
     </div>
   )

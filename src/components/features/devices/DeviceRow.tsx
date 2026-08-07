@@ -20,7 +20,7 @@ export function DeviceRow({ device }: { device: Device }) {
 
   return (
     <tr className="hover">
-      <td>
+      <td className="min-w-[120px] whitespace-nowrap">
         <Link href={href} className="link link-primary font-mono">
           {device.serial ?? '-'}
         </Link>
@@ -76,7 +76,7 @@ export function DeviceRow({ device }: { device: Device }) {
       <td>
         <DeviceTelemetryIcons telemetry={telemetry} />
       </td>
-      <td>
+      <td className="text-center">
         <DeviceStatusBadge online={device.online} />
       </td>
       <td className="text-right">

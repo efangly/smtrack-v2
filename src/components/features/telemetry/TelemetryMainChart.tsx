@@ -6,6 +6,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,14 +17,44 @@ import { formatDateTime } from '@/lib/utils'
 
 import { timeTick, type ChartRow } from './telemetry-chart-utils'
 
+function ThresholdLine({
+  y,
+  label,
+}: {
+  y: number | null | undefined
+  label: string
+}) {
+  if (y === null || y === undefined) return null
+  return (
+    <ReferenceLine
+      yAxisId="temp"
+      y={y}
+      ifOverflow="extendDomain"
+      stroke="var(--chart-threshold)"
+      strokeDasharray="4 4"
+      strokeWidth={1.5}
+      label={{
+        value: label,
+        position: 'insideBottomLeft',
+        fill: 'var(--chart-muted)',
+        fontSize: 10,
+      }}
+    />
+  )
+}
+
 export function TelemetryMainChart({
   data,
   syncId,
   height = 240,
+  tempMin,
+  tempMax,
 }: {
   data: ChartRow[]
   syncId: string
   height?: number
+  tempMin?: number | null
+  tempMax?: number | null
 }) {
   // คลิกที่ legend เพื่อซ่อน/แสดงเส้นแต่ละเส้น — เก็บ key ที่ถูกซ่อนไว้ใน state
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
@@ -87,6 +118,8 @@ export function TelemetryMainChart({
             </span>
           )}
         />
+        <ThresholdLine y={tempMin} label="Min" />
+        <ThresholdLine y={tempMax} label="Max" />
         <Line
           yAxisId="temp"
           type="monotone"

@@ -4,14 +4,16 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import type { QueryTelemetryParams } from '@/lib/api/telemetry'
 import { LogDaySchema, type LogDay } from '@/lib/api/telemetry'
-import { useSse, type SseStatus } from '@/hooks/useSse'
+import { useRealtimeChannel } from '@/hooks/useRealtimeChannel'
+import type { SseStatus } from '@/hooks/useSse'
 
 const MAX_CACHED_POINTS = 100
 
 export function useTelemetryLiveFeed(serial: string): SseStatus {
   const queryClient = useQueryClient()
 
-  return useSse<LogDay>('/telemetry/stream', 'telemetry', (raw) => {
+  // ใช้ EventSource กลางของแท็บผ่าน RealtimeFeedProvider ไม่เปิด stream ของตัวเอง
+  return useRealtimeChannel('telemetry', (raw) => {
     const point = LogDaySchema.safeParse(raw)
     if (!point.success || point.data.serial !== serial) return
 

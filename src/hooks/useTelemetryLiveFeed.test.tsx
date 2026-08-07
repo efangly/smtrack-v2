@@ -1,8 +1,9 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
 import { useTelemetryLiveFeed } from './useTelemetryLiveFeed'
+import { RealtimeFeedProvider } from '@/components/features/realtime/RealtimeFeedProvider'
 import type { LogDay } from '@/lib/api/telemetry'
 
 class MockEventSource {
@@ -18,7 +19,12 @@ class MockEventSource {
     this.listeners[type].push(handler)
   }
 
-  removeEventListener() {}
+  removeEventListener(type: string, handler: (event: unknown) => void) {
+    this.listeners[type] = (this.listeners[type] ?? []).filter(
+      (h) => h !== handler,
+    )
+  }
+
   close() {}
 
   dispatch(type: string, data: unknown) {
@@ -53,6 +59,31 @@ function makeLogDay(overrides: Partial<LogDay>): LogDay {
   }
 }
 
+/**
+ * hook นี้ไม่เปิด EventSource เองแล้ว — รับ event ผ่าน stream กลางของ
+ * RealtimeFeedProvider จึงต้องห่อ Provider ให้ด้วย
+ */
+function setup() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  client.setQueryData(['notifications', 'unread-count'], 0)
+  client.setQueryData(
+    ['telemetry', { serial: 'DEV-1', limit: 50 }],
+    [makeLogDay({ id: 'old' })],
+  )
+
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>
+      <RealtimeFeedProvider>{children}</RealtimeFeedProvider>
+    </QueryClientProvider>
+  )
+
+  renderHook(() => useTelemetryLiveFeed('DEV-1'), { wrapper })
+
+  return { client, source: MockEventSource.instances.at(-1)! }
+}
+
 describe('useTelemetryLiveFeed', () => {
   beforeEach(() => {
     MockEventSource.instances = []
@@ -61,20 +92,11 @@ describe('useTelemetryLiveFeed', () => {
   })
 
   it('prepends matching-serial points into the telemetry query cache', () => {
-    const client = new QueryClient()
-    client.setQueryData(
-      ['telemetry', { serial: 'DEV-1', limit: 50 }],
-      [makeLogDay({ id: 'old' })],
-    )
+    const { client, source } = setup()
 
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    )
-
-    renderHook(() => useTelemetryLiveFeed('DEV-1'), { wrapper })
-
-    const instance = MockEventSource.instances[0]
-    instance.dispatch('telemetry', makeLogDay({ id: 'new' }))
+    act(() => {
+      source.dispatch('telemetry', makeLogDay({ id: 'new' }))
+    })
 
     const cached = client.getQueryData<LogDay[]>([
       'telemetry',
@@ -84,25 +106,25 @@ describe('useTelemetryLiveFeed', () => {
   })
 
   it('ignores points for a different serial', () => {
-    const client = new QueryClient()
-    client.setQueryData(
-      ['telemetry', { serial: 'DEV-1', limit: 50 }],
-      [makeLogDay({ id: 'old' })],
-    )
+    const { client, source } = setup()
 
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    )
-
-    renderHook(() => useTelemetryLiveFeed('DEV-1'), { wrapper })
-
-    const instance = MockEventSource.instances[0]
-    instance.dispatch('telemetry', makeLogDay({ id: 'other', serial: 'DEV-2' }))
+    act(() => {
+      source.dispatch('telemetry', makeLogDay({ id: 'other', serial: 'DEV-2' }))
+    })
 
     const cached = client.getQueryData<LogDay[]>([
       'telemetry',
       { serial: 'DEV-1', limit: 50 },
     ])
     expect(cached?.map((p) => p.id)).toEqual(['old'])
+  })
+
+  it('ใช้ stream กลางเส้นเดียว ไม่เปิด /telemetry/stream ของตัวเอง', () => {
+    const { source } = setup()
+
+    expect(source.url).toContain('/stream?channels=')
+    expect(
+      MockEventSource.instances.some((i) => i.url.includes('/telemetry/stream')),
+    ).toBe(false)
   })
 })

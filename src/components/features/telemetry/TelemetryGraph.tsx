@@ -11,11 +11,15 @@ export function TelemetryGraph({
   probeId,
   from,
   to,
+  tempMin,
+  tempMax,
 }: {
   serial: string
   probeId?: string
   from?: string
   to?: string
+  tempMin?: number | null
+  tempMax?: number | null
 }) {
   const { data, isLoading, isError } = useTelemetry({
     serial,
@@ -34,7 +38,12 @@ export function TelemetryGraph({
 
   return (
     <div className="viz-root flex flex-col gap-2">
-      <TelemetryMainChart data={chartData} syncId={syncId} />
+      <TelemetryMainChart
+        data={chartData}
+        syncId={syncId}
+        tempMin={tempMin}
+        tempMax={tempMax}
+      />
       <TelemetryStatusStrip
         data={chartData}
         dataKey="doorOpen"

@@ -5,7 +5,6 @@ import type { ReactNode } from 'react'
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">ตั้งค่า</h1>
       {children}
     </div>
   )

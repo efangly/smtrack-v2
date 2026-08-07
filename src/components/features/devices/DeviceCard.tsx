@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Droplets, Thermometer } from 'lucide-react'
+import { Thermometer } from 'lucide-react'
 
 import type { Device } from '@/types/device'
 import { useLatestTelemetry } from '@/hooks/useLatestTelemetry'
@@ -11,7 +11,12 @@ import { resolveDeviceImageUrl } from '@/lib/imageUrl'
 
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 import { DeviceTelemetryIcons } from './DeviceTelemetryIcons'
-import { ProbeDoorIcons, ProbeStatusIcon, ProbeTelemetryLine } from './ProbeTelemetryLine'
+import {
+  ProbeDoorBadges,
+  ProbeInfoLine,
+  TONE_CLASS,
+  aggregateProbeTone,
+} from './ProbeTelemetryLine'
 
 function formatTime(iso: string | undefined) {
   if (!iso) return '—'
@@ -25,35 +30,32 @@ export function DeviceCard({ device }: { device: Device }) {
   const { data: telemetry } = useLatestTelemetry(device.serial)
   const { data: probes, isLoading: probesLoading } = useDeviceProbeTelemetry(device.id)
   const href = `/devices/${encodeURIComponent(device.staticName)}`
-  const singleProbe = probes && probes.length === 1 ? probes[0] : undefined
-  const multiProbe = probes && probes.length > 1 ? probes : undefined
   const positionPicUrl = resolveDeviceImageUrl(device.positionPic)
+  const doorProbes = probes?.filter((probe) => probe.doorQty > 0) ?? []
 
   return (
     <div className="flex flex-col gap-3 rounded-box surface-card p-4">
       <div className="flex items-start gap-3">
-        {positionPicUrl && (
-          <Avatar
-            src={positionPicUrl}
-            alt={device.name ?? device.serial ?? 'อุปกรณ์'}
-            shape="square"
-            fit="cover"
-            size={64}
-            className="shrink-0"
-          />
-        )}
+        <Avatar
+          src={positionPicUrl}
+          alt={device.name ?? device.serial ?? 'อุปกรณ์'}
+          shape="square"
+          fit="cover"
+          size={64}
+          className="shrink-0"
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <Link href={href} className="min-w-0">
-              <p className="truncate font-medium hover:underline">
+              <p className="truncate font-semibold hover:underline">
                 {device.name ?? '-'}
               </p>
               <p className="truncate font-mono text-xs text-base-content/60">
                 {device.serial ?? '-'}
               </p>
             </Link>
-            <DeviceStatusBadge online={device.online} />
+            <DeviceStatusBadge online={device.online} variant="pill" />
           </div>
 
           {device.position && (
@@ -62,52 +64,47 @@ export function DeviceCard({ device }: { device: Device }) {
         </div>
       </div>
 
-      {multiProbe ? (
-        <div className="flex flex-col gap-1.5 rounded-lg bg-base-200 px-3 py-2">
-          {multiProbe.map((probe) => (
-            <ProbeTelemetryLine
-              key={probe.id}
-              probe={probe}
-              showLabel
-              online={device.online}
-            />
+      {doorProbes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {doorProbes.map((probe) => (
+            <ProbeDoorBadges key={probe.id} probe={probe} />
           ))}
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 rounded-lg bg-base-200 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <Thermometer className="h-4 w-4 text-base-content/60" aria-hidden="true" />
-            <span className="text-sm font-semibold tabular-nums">
-              {probesLoading
-                ? '…'
-                : singleProbe?.tempDisplay !== undefined && singleProbe?.tempDisplay !== null
-                  ? `${singleProbe.tempDisplay}°C`
-                  : '—'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Droplets className="h-4 w-4 text-base-content/60" aria-hidden="true" />
-            <span className="text-sm font-semibold tabular-nums">
-              {probesLoading
-                ? '…'
-                : singleProbe?.humidityDisplay !== undefined &&
-                    singleProbe?.humidityDisplay !== null
-                  ? `${singleProbe.humidityDisplay}%`
-                  : '—'}
-            </span>
-          </div>
-          {singleProbe && (
-            <div className="flex items-center gap-2">
-              <ProbeStatusIcon probe={singleProbe} online={device.online} />
-              <ProbeDoorIcons probe={singleProbe} />
-            </div>
-          )}
         </div>
       )}
 
-      <div className="flex items-center justify-between text-xs text-base-content/50">
-        <span>อัปเดตล่าสุด {formatTime(telemetry?.sendTime)}</span>
-        <DeviceTelemetryIcons telemetry={telemetry} />
+      {probesLoading ? (
+        <div className="rounded-lg bg-base-200 px-3 py-2 text-sm text-base-content/50">…</div>
+      ) : probes && probes.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          {probes.map((probe) => (
+            <div key={probe.id} className="flex flex-wrap items-center gap-2">
+              <ProbeInfoLine probe={probe} online={device.online} />
+              <span className="inline-flex items-center gap-2 text-sm font-semibold tabular-nums">
+                <span className="rounded-lg border border-base-300 px-2.5 py-1">
+                  {probe.tempDisplay !== null ? `${probe.tempDisplay}°C` : '—'}
+                </span>
+                <span className="rounded-lg border border-base-300 px-2.5 py-1">
+                  {probe.humidityDisplay !== null ? `${probe.humidityDisplay}%` : '—'}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="flex items-center justify-between gap-2">
+        <span className="rounded-lg border border-base-300 px-2.5 py-1 text-xs text-base-content/60">
+          {formatTime(telemetry?.sendTime)}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-9 items-center justify-center rounded-lg border border-base-300 px-2">
+            <Thermometer
+              className={`h-4 w-4 ${TONE_CLASS[aggregateProbeTone(probes, device.online)]}`}
+              aria-label="สถานะ probe โดยรวม"
+            />
+          </span>
+          <DeviceTelemetryIcons telemetry={telemetry} variant="tiles" />
+        </div>
       </div>
     </div>
   )
