@@ -41,6 +41,7 @@
   --chart-series-temp: #2a78d6;
   --chart-series-humidity: #eb6834;
   --chart-series-door: #1f9d55;
+  --chart-series-internet: #7c5cbf;
 }
 
 /* ธีมถูก stamp ลง <html data-theme> ก่อน paint เสมอ (ดู inline script ใน layout.tsx)
@@ -55,6 +56,7 @@
   --chart-series-temp: #3987e5;
   --chart-series-humidity: #d95926;
   --chart-series-door: #34c759;
+  --chart-series-internet: #a78bfa;
 }
 
 /* ---------- shell utilities ---------- */

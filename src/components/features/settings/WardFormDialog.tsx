@@ -1,8 +1,15 @@
 'use client'
 
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { Controller, useForm } from 'react-hook-form'
 
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useHospitals } from '@/hooks/useHospitals'
 import {
   WARD_TYPE_LABELS,
@@ -28,10 +35,20 @@ export const WardFormDialog = forwardRef<
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm<WardInput>({ defaultValues: {} })
+
+  const hospitalOptions = useMemo(
+    () =>
+      hospitals?.map((hospital) => ({
+        value: hospital.id,
+        label: hospital.hosName,
+      })) ?? [],
+    [hospitals],
+  )
 
   useImperativeHandle(ref, () => ({
     open: (ward) => {
@@ -91,20 +108,27 @@ export const WardFormDialog = forwardRef<
             </div>
 
             <div className="form-control">
-              <label className="label-text mb-1 block text-xs">
+              <label
+                htmlFor="ward-hospital"
+                className="label-text mb-1 block text-xs"
+              >
                 โรงพยาบาล *
               </label>
-              <select
-                className="select select-sm select-bordered w-full"
-                {...register('hosId', { required: 'กรุณาเลือกโรงพยาบาล' })}
-              >
-                <option value="">- เลือกโรงพยาบาล -</option>
-                {hospitals?.map((hospital) => (
-                  <option key={hospital.id} value={hospital.id}>
-                    {hospital.hosName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="hosId"
+                rules={{ required: 'กรุณาเลือกโรงพยาบาล' }}
+                render={({ field }) => (
+                  <SearchableSelect
+                    id="ward-hospital"
+                    options={hospitalOptions}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="- เลือกโรงพยาบาล -"
+                  />
+                )}
+              />
               <span className="mt-1 text-xs text-error empty:hidden">
                 {errors.hosId?.message}
               </span>

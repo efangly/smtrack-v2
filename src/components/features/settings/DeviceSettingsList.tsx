@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Pencil, Plus, Search } from 'lucide-react'
 
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
 import { useCreateDevice } from '@/hooks/useCreateDevice'
 import { useDevices } from '@/hooks/useDevices'
@@ -31,13 +32,6 @@ export function DeviceSettingsList() {
   const [keyword, setKeyword] = useState('')
   const { page, limit, setPage, setLimit } = usePaginationParams()
 
-  // `ward` ของ log service เป็น free text ที่ไม่ผูกกับตารางวอร์ดของ auth service
-  // จึงรวบรวมค่าที่ใช้อยู่จริงมาเป็นตัวช่วยเติมคำในฟอร์มแทนการให้เลือกจากรายการ
-  const wardSuggestions = useMemo(
-    () => [...new Set(devices?.map((device) => device.ward).filter(Boolean))],
-    [devices],
-  )
-
   const filtered = useMemo(() => {
     if (!devices) return []
     const needle = keyword.trim().toLowerCase()
@@ -59,36 +53,46 @@ export function DeviceSettingsList() {
   const totalItems = filtered.length
   const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
+  const action: ReactNode = canManage && (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      onClick={() => formDialogRef.current?.open()}
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      เพิ่มอุปกรณ์
+    </button>
+  )
+  const title = 'ทะเบียนอุปกรณ์'
+  const description = 'เพิ่มและแก้ไขข้อมูลจุดติดตั้ง — ดูสถานะการทำงานได้ที่เมนูอุปกรณ์'
+
+  if (isLoading)
+    return (
+      <Card title={title} description={description} action={action}>
+        <span className="loading loading-spinner loading-md" />
+      </Card>
+    )
   if (isError)
-    return <p className="text-error">ไม่สามารถโหลดทะเบียนอุปกรณ์ได้</p>
+    return (
+      <Card title={title} description={description} action={action}>
+        <p className="text-error">ไม่สามารถโหลดทะเบียนอุปกรณ์ได้</p>
+      </Card>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
-          <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
-          <input
-            type="search"
-            className="grow"
-            placeholder="ค้นหา serial / ชื่อคงที่ / วอร์ด"
-            aria-label="ค้นหาในทะเบียนอุปกรณ์"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-        </label>
-
-        {canManage && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => formDialogRef.current?.open()}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            เพิ่มอุปกรณ์
-          </button>
-        )}
-      </div>
+    <Card title={title} description={description} action={action}>
+      <div className="flex flex-col gap-3">
+      <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
+        <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
+        <input
+          type="search"
+          className="grow"
+          placeholder="ค้นหา serial / ชื่ออุปกรณ์"
+          aria-label="ค้นหาในทะเบียนอุปกรณ์"
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+        />
+      </label>
 
       {!devices || devices.length === 0 ? (
         <p className="text-base-content/60">ยังไม่มีอุปกรณ์ในทะเบียน</p>
@@ -102,9 +106,7 @@ export function DeviceSettingsList() {
             <thead>
               <tr>
                 <th>Serial</th>
-                <th>ชื่อคงที่</th>
                 <th>ชื่ออุปกรณ์</th>
-                <th>วอร์ด</th>
                 <th>Firmware</th>
                 <th>สถานะ</th>
                 {canManage && <th className="text-right">การจัดการ</th>}
@@ -114,9 +116,7 @@ export function DeviceSettingsList() {
               {paged.map((device) => (
                 <tr key={device.id}>
                   <td className="font-mono">{device.serial ?? '-'}</td>
-                  <td className="font-mono">{device.staticName}</td>
                   <td className="font-medium">{device.name ?? '-'}</td>
-                  <td>{device.ward}</td>
                   <td>{device.hardware?.firmware ?? '-'}</td>
                   <td>
                     <Badge tone={device.status ? 'success' : 'neutral'}>
@@ -128,7 +128,7 @@ export function DeviceSettingsList() {
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"
-                        aria-label={`แก้ไข ${device.name ?? device.staticName}`}
+                        aria-label={`แก้ไข ${device.name ?? '-'}`}
                         onClick={() => formDialogRef.current?.open(device)}
                       >
                         <Pencil className="h-4 w-4" aria-hidden="true" />
@@ -152,11 +152,11 @@ export function DeviceSettingsList() {
 
       <DeviceFormDialog
         ref={formDialogRef}
-        wardSuggestions={wardSuggestions}
         isSubmitting={createDevice.isPending || updateDevice.isPending}
         onCreate={(dto) => createDevice.mutate(dto)}
         onUpdate={(id, dto) => updateDevice.mutate({ id, dto })}
       />
-    </div>
+      </div>
+    </Card>
   )
 }

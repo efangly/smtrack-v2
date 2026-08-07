@@ -12,7 +12,10 @@ interface NotificationFeedState {
   unreadCount: number
   status: SseStatus
   push: (notification: Notification) => void
-  markAllRead: () => void
+  // ตั้งค่าตรง ๆ จากแหล่งที่ authoritative กว่า session counter ในตัว store เอง —
+  // ใช้ seed ค่าตอนเปิดแอป (GET /notifications/unread-count) และ sync ตอนได้ event
+  // อ่านแล้วผ่าน SSE (action:'read'/'read-all' หรือ unreadCount ที่แนบมากับ notification ใหม่)
+  setUnreadCount: (count: number) => void
   setStatus: (status: SseStatus) => void
 }
 
@@ -26,7 +29,7 @@ export const useNotificationFeedStore = create<NotificationFeedState>(
         items: [notification, ...state.items].slice(0, MAX_FEED_ITEMS),
         unreadCount: state.unreadCount + 1,
       })),
-    markAllRead: () => set({ unreadCount: 0 }),
+    setUnreadCount: (count) => set({ unreadCount: count }),
     setStatus: (status) => set({ status }),
   }),
 )

@@ -89,6 +89,35 @@ export async function getProbes(
   return z.array(ProbeSchema).parse(data)
 }
 
+// ค่า telemetry ล่าสุด "ต่อ probe" (อุณหภูมิ/ความชื้น/ประตู) ต่างจาก ProbeSchema
+// ด้านบนที่เป็นแค่ config (doorQty/channel/...) — มาจาก GET .../probes/telemetry
+// ที่ join กับ LogDays ล่าสุดต่อ probeId ให้แล้วฝั่ง backend
+export const ProbeTelemetrySchema = z.object({
+  id: z.string(),
+  channel: z.string(),
+  name: z.string().nullable(),
+  type: z.string().nullable(),
+  doorQty: z.number(),
+  temp: z.number().nullable(),
+  tempDisplay: z.number().nullable(),
+  humidity: z.number().nullable(),
+  humidityDisplay: z.number().nullable(),
+  door1: z.boolean().nullable(),
+  door2: z.boolean().nullable(),
+  door3: z.boolean().nullable(),
+  sendTime: z.string().nullable(),
+})
+export type ProbeTelemetry = z.infer<typeof ProbeTelemetrySchema>
+
+export async function getDeviceProbeTelemetry(
+  deviceId: string,
+): Promise<ProbeTelemetry[]> {
+  const { data } = await apiClient.get(
+    `/devices/${encodeURIComponent(deviceId)}/probes/telemetry`,
+  )
+  return z.array(ProbeTelemetrySchema).parse(data)
+}
+
 export async function getProbe(id: string): Promise<Probe> {
   const { data } = await apiClient.get(`/probes/${encodeURIComponent(id)}`)
   return ProbeSchema.parse(data)

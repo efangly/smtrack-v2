@@ -66,9 +66,20 @@ export function unwrapEnvelope(response: AxiosResponse): AxiosResponse {
     typeof response.data === 'object' &&
     'success' in response.data
   ) {
-    response.data = response.data.data
+    const envelope = response.data
+    response.data = envelope.data
+    // endpoint ที่คืน Paginated<T> (เช่น GET /notifications) ใส่ meta เป็น sibling
+    // ของ data ไม่ได้ซ้อนอยู่ข้างใน — เก็บไว้ที่ตัว response เองก่อนโดน reassign ทับ
+    // ด้านบน ไม่งั้น meta.total/totalPages จะหายไปเงียบๆ
+    if (envelope.meta !== undefined) {
+      ;(response as EnvelopeResponse).meta = envelope.meta
+    }
   }
   return response
+}
+
+export interface EnvelopeResponse<T = unknown> extends AxiosResponse<T> {
+  meta?: unknown
 }
 
 export function toApiError(error: unknown): unknown {

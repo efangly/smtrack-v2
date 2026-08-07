@@ -1,14 +1,16 @@
 'use client'
 
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import type {
   CreateDeviceInput,
   Device,
   UpdateDeviceInput,
 } from '@/lib/api/devices'
+import { useHospitals } from '@/hooks/useHospitals'
 import { resolveDeviceImageUrl } from '@/lib/imageUrl'
 
 export interface DeviceFormDialogHandle {
@@ -32,34 +34,98 @@ export const DeviceFormDialog = forwardRef<
   {
     onCreate: (dto: CreateDeviceInput) => void
     onUpdate: (id: string, dto: UpdateDeviceInput) => void
-    /** ชื่อวอร์ดที่ใช้อยู่แล้วในทะเบียน ใช้เป็นตัวช่วยเติมคำ ไม่ได้บังคับเลือก */
-    wardSuggestions?: string[]
     isSubmitting?: boolean
   }
->(function DeviceFormDialog(
-  { onCreate, onUpdate, wardSuggestions = [], isSubmitting },
-  ref,
-) {
+>(function DeviceFormDialog({ onCreate, onUpdate, isSubmitting }, ref) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   // เก็บทั้ง device ไม่ใช่แค่ id เพราะต้องใช้ positionPic เดิมมาแสดงเป็น preview
   const [editing, setEditing] = useState<Device | null>(null)
+  // ใช้กรองวอร์ดที่จะให้เลือกเท่านั้น ไม่ได้ส่งขึ้น backend เพราะ Device ไม่มีฟิลด์โรงพยาบาล
+  const [hospitalId, setHospitalId] = useState('')
+  // ค่า ward เดิมของอุปกรณ์ที่ไม่ตรงกับ ward ของโรงพยาบาลไหนเลย (ข้อมูล legacy) — เก็บไว้
+  // เป็นตัวเลือกพิเศษกันค่าหายตอนแก้ไข จนกว่าผู้ใช้จะเลือกวอร์ดจริงแทน
+  const [legacyWard, setLegacyWard] = useState<string | null>(null)
+
+  const { data: hospitals } = useHospitals()
 
   const {
     register,
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<DeviceFormValues>({ defaultValues: {} })
+
+  const selectedHospital = hospitals?.find(
+    (hospital) => hospital.id === hospitalId,
+  )
+  const wardOptions = useMemo(
+    () => [...(selectedHospital?.ward ?? [])].sort((a, b) => a.wardSeq - b.wardSeq),
+    [selectedHospital],
+  )
+  const hospitalSelectOptions = useMemo(
+    () =>
+      (hospitals ?? []).map((hospital) => ({
+        value: hospital.id,
+        label: hospital.hosName,
+      })),
+    [hospitals],
+  )
+  const wardSelectOptions = useMemo(() => {
+    const options = wardOptions.map((ward) => ({
+      value: ward.id,
+      label: ward.wardName,
+    }))
+    if (legacyWard) {
+      options.push({ value: legacyWard, label: `${legacyWard} (ค่าเดิม)` })
+    }
+    return options
+  }, [wardOptions, legacyWard])
+
+  function handleHospitalChange(nextHospitalId: string) {
+    setHospitalId(nextHospitalId)
+    setLegacyWard(null)
+    const nextHospital = hospitals?.find(
+      (hospital) => hospital.id === nextHospitalId,
+    )
+    const firstWard = [...(nextHospital?.ward ?? [])].sort(
+      (a, b) => a.wardSeq - b.wardSeq,
+    )[0]
+    setValue('ward', firstWard?.id ?? '')
+  }
 
   useImperativeHandle(ref, () => ({
     open: (device) => {
       setEditing(device ?? null)
+
+      if (device) {
+        // เทียบค่า ward เดิมกับทุกโรงพยาบาลก่อน เพื่อ preselect โรงพยาบาล/วอร์ดที่ตรงกัน
+        // จริง — ถ้าไม่เจอเลยแสดงว่าเป็นข้อมูล legacy ที่ไม่ตรงกับวอร์ดไหนเลย
+        const needle = device.ward.trim().toLowerCase()
+        const matchedHospital = (hospitals ?? []).find((hospital) =>
+          (hospital.ward ?? []).some(
+            (ward) =>
+              ward.id.toLowerCase() === needle ||
+              ward.wardName.trim().toLowerCase() === needle,
+          ),
+        )
+        if (matchedHospital) {
+          setHospitalId(matchedHospital.id)
+          setLegacyWard(null)
+        } else {
+          setHospitalId('')
+          setLegacyWard(device.ward)
+        }
+      } else {
+        setHospitalId('')
+        setLegacyWard(null)
+      }
+
       reset(
         device
           ? {
               serial: device.serial ?? undefined,
-              staticName: device.staticName,
               ward: device.ward,
               name: device.name ?? undefined,
               seq: device.seq,
@@ -78,7 +144,6 @@ export const DeviceFormDialog = forwardRef<
               // value when a key is `undefined` — must pass '' to actually
               // clear an uncontrolled input, not undefined.
               serial: '',
-              staticName: '',
               ward: '',
               name: '',
               seq: 0,
@@ -128,35 +193,33 @@ export const DeviceFormDialog = forwardRef<
 
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">
-                ชื่อคงที่ (staticName) *
+                โรงพยาบาล *
               </label>
-              <input
-                className="input input-sm input-bordered w-full font-mono"
-                // staticName เป็นตัวอ้างอิงจุดติดตั้งในทุก URL — เปลี่ยนแล้วลิงก์เดิมจะเสีย
-                disabled={Boolean(editing)}
-                {...register('staticName', {
-                  required: 'กรุณากรอกชื่อคงที่',
-                })}
+              <SearchableSelect
+                ariaLabel="เลือกโรงพยาบาล"
+                placeholder="เลือกโรงพยาบาล"
+                options={hospitalSelectOptions}
+                value={hospitalId}
+                onChange={handleHospitalChange}
               />
-              <span className="mt-1 text-xs text-error empty:hidden">
-                {errors.staticName?.message}
-              </span>
             </div>
 
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">วอร์ด *</label>
-              {/* `ward` ของ log service เป็น free text (เช่น "ICU", "OPD") คนละชุดกับ
-                  วอร์ดของ auth service — ห้ามทำเป็น select ที่ส่ง ward id ไป */}
-              <input
-                className="input input-sm input-bordered w-full"
-                list="device-ward-suggestions"
-                {...register('ward', { required: 'กรุณากรอกวอร์ด' })}
+              <Controller
+                control={control}
+                name="ward"
+                rules={{ required: 'กรุณาเลือกวอร์ด' }}
+                render={({ field }) => (
+                  <SearchableSelect
+                    ariaLabel="เลือกวอร์ด"
+                    placeholder="เลือกวอร์ด"
+                    options={wardSelectOptions}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                  />
+                )}
               />
-              <datalist id="device-ward-suggestions">
-                {wardSuggestions.map((ward) => (
-                  <option key={ward} value={ward} />
-                ))}
-              </datalist>
               <span className="mt-1 text-xs text-error empty:hidden">
                 {errors.ward?.message}
               </span>

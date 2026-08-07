@@ -43,6 +43,7 @@ function makeLogDay(overrides: Partial<LogDay>): LogDay {
     door3: false,
     internet: true,
     probe: '1',
+    probeId: 'probe-1',
     battery: 100,
     tempInternal: null,
     extMemory: false,

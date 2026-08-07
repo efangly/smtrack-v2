@@ -15,7 +15,7 @@ export function DeviceInfoCard({
   action?: ReactNode
 }) {
   const positionPicUrl = resolveDeviceImageUrl(device.positionPic)
-  const title = device.name ?? device.staticName
+  const title = device.name ?? '-'
 
   return (
     <Card title={title} action={action}>
@@ -40,10 +40,6 @@ export function DeviceInfoCard({
           <div>
             <dt className="text-base-content/60">Serial</dt>
             <dd>{device.serial ?? 'ยังไม่มีกล่องเสียบ'}</dd>
-          </div>
-          <div>
-            <dt className="text-base-content/60">Ward</dt>
-            <dd>{device.ward}</dd>
           </div>
           <div>
             <dt className="text-base-content/60">Firmware</dt>

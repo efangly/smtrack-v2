@@ -7,6 +7,13 @@ import * as backupApi from '@/lib/api/backup'
 
 jest.mock('@/lib/api/backup')
 
+// usePaginationParams เรียก useRouter/useSearchParams ซึ่งไม่มี app router ในเทส
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: jest.fn() }),
+  usePathname: () => '/settings/backup',
+  useSearchParams: () => new URLSearchParams(),
+}))
+
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },

@@ -1,15 +1,6 @@
 'use client'
 
-import {
-  Battery,
-  BatteryLow,
-  DoorClosed,
-  DoorOpen,
-  MemoryStick,
-  Plug,
-  Wifi,
-  WifiOff,
-} from 'lucide-react'
+import { Battery, BatteryLow, MemoryStick, Plug, Wifi, WifiOff } from 'lucide-react'
 
 import type { LogDay } from '@/lib/api/telemetry'
 
@@ -41,17 +32,6 @@ function batteryTone(telemetry: LogDay | undefined): Tone {
   return 'success'
 }
 
-// เช็คว่ามีประตูช่องไหนเปิดอยู่บ้าง — ใช้เงื่อนไขเดียวกับคอลัมน์ "ประตู" ใน
-// TelemetryTable.tsx (door1 || door2 || door3 → เปิด) เพื่อให้ความหมายตรงกันทั้งแอป
-function isAnyDoorOpen(telemetry: LogDay): boolean {
-  return telemetry.door1 || telemetry.door2 || telemetry.door3
-}
-
-function doorTone(telemetry: LogDay | undefined): Tone {
-  if (!telemetry) return 'muted'
-  return isAnyDoorOpen(telemetry) ? 'error' : 'success'
-}
-
 function memoryTone(telemetry: LogDay | undefined): Tone {
   if (!telemetry) return 'muted'
   return telemetry.extMemory ? 'success' : 'error'
@@ -64,7 +44,6 @@ export function DeviceTelemetryIcons({
 }) {
   const WifiIcon = telemetry && !telemetry.internet ? WifiOff : Wifi
   const BatteryIcon = telemetry && telemetry.battery < 20 ? BatteryLow : Battery
-  const DoorIcon = telemetry && isAnyDoorOpen(telemetry) ? DoorOpen : DoorClosed
 
   return (
     <div className="flex items-center gap-2.5">
@@ -75,10 +54,6 @@ export function DeviceTelemetryIcons({
       <Plug
         className={`h-4 w-4 ${TONE_CLASS[plugTone(telemetry)]}`}
         aria-label={telemetry ? (telemetry.plug ? 'เสียบปลั๊กอยู่' : 'ปลั๊กหลุด') : 'ไม่มีข้อมูลปลั๊ก'}
-      />
-      <DoorIcon
-        className={`h-4 w-4 ${TONE_CLASS[doorTone(telemetry)]}`}
-        aria-label={telemetry ? (isAnyDoorOpen(telemetry) ? 'ประตูเปิดอยู่' : 'ประตูปิดสนิท') : 'ไม่มีข้อมูลประตู'}
       />
       <MemoryStick
         className={`h-4 w-4 ${TONE_CLASS[memoryTone(telemetry)]}`}

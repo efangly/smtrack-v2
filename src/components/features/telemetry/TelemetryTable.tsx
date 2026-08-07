@@ -3,8 +3,23 @@
 import { useTelemetry } from '@/hooks/useTelemetry'
 import { formatDateTime } from '@/lib/utils'
 
-export function TelemetryTable({ serial }: { serial: string }) {
-  const { data, isLoading, isError } = useTelemetry({ serial, limit: 50 })
+export function TelemetryTable({
+  serial,
+  probeId,
+  from,
+  to,
+}: {
+  serial: string
+  probeId?: string
+  from?: string
+  to?: string
+}) {
+  const { data, isLoading, isError } = useTelemetry({
+    serial,
+    probeId,
+    from,
+    to,
+  })
 
   if (isLoading) return <span className="loading loading-spinner loading-md" />
   if (isError)

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
+import { Card } from '@/components/ui/Card'
 import {
   ConfirmDialog,
   type ConfirmDialogHandle,
@@ -43,7 +44,23 @@ export function WarrantyList() {
   const role = useAuthStore((state) => state.payload?.role)
   const canManage = hydrated && canManageDevices(role)
 
-  const { data: warranties, isLoading, isError } = useWarranties(canManage)
+  const [keyword, setKeyword] = useState('')
+  // debounce คำค้นก่อนยิง request — search เป็น server-side (?search=) แล้ว
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedKeyword(keyword.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [keyword])
+  const [expiringSoon, setExpiringSoon] = useState(false)
+
+  const {
+    data: warranties,
+    isLoading,
+    isError,
+  } = useWarranties(canManage, {
+    search: debouncedKeyword || undefined,
+    expiringSoon: expiringSoon || undefined,
+  })
   const { data: devices } = useDevices()
   const serialOptions = useMemo(
     () =>
@@ -53,9 +70,21 @@ export function WarrantyList() {
         )
         .map((device) => ({
           serial: device.serial,
-          devName: device.name ?? device.staticName,
-          label: `${device.staticName} (${device.serial})`,
+          devName: device.name ?? '-',
+          label: `${device.name ?? '-'} (${device.serial})`,
         })),
+    [devices],
+  )
+  // warranty.devName เป็น free text ที่บันทึกแยกไว้ตอนสร้างรายการ บางรายการเก่าเก็บเป็น ID
+  // ภายใน (เช่น "DEVICE-xxxx") จึง map ย้อนกลับผ่าน serial ไปหาอุปกรณ์จริงเพื่อโชว์
+  // device.name ปัจจุบันแทนเสมอที่หาเจอ
+  const deviceBySerial = useMemo(
+    () =>
+      new Map(
+        (devices ?? [])
+          .filter((device) => Boolean(device.serial))
+          .map((device) => [device.serial as string, device]),
+      ),
     [devices],
   )
 
@@ -66,49 +95,61 @@ export function WarrantyList() {
   const formDialogRef = useRef<WarrantyFormDialogHandle>(null)
   const deleteDialogRef = useRef<ConfirmDialogHandle>(null)
   const targetIdRef = useRef<string>('')
-  const [keyword, setKeyword] = useState('')
   const { page, limit, setPage, setLimit } = usePaginationParams()
 
-  const filtered = useMemo(() => {
-    if (!warranties) return []
-    const needle = keyword.trim().toLowerCase()
-    if (!needle) return warranties
+  // search/expiringSoon กรองที่ backend แล้ว (ดู useWarranties ด้านบน) เหลือแค่ pagination
+  // ฝั่ง client เพราะ getWarranties() ยังดึงมาทั้งชุดผ่าน fetchAllPages
+  const filtered = warranties ?? []
 
-    return warranties.filter((warranty) =>
-      [
-        warranty.serial,
-        warranty.devName,
-        warranty.product,
-        warranty.customerName,
-      ]
-        .filter((value): value is string => Boolean(value))
-        .some((value) => value.toLowerCase().includes(needle)),
-    )
-  }, [warranties, keyword])
-
-  // เปลี่ยนคำค้นแล้วต้องกลับไปหน้า 1 เสมอ ไม่งั้นอาจค้างอยู่หน้าที่เกินผลลัพธ์ใหม่
+  // เปลี่ยนคำค้น/ตัวกรองแล้วต้องกลับไปหน้า 1 เสมอ ไม่งั้นอาจค้างอยู่หน้าที่เกินผลลัพธ์ใหม่
   useEffect(() => {
     if (page !== 1) setPage(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword])
+  }, [debouncedKeyword, expiringSoon])
 
   const totalItems = filtered.length
   const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
+  const title = 'รายการประกันอุปกรณ์ทั้งหมด'
+
   if (!canManage) {
     return (
-      <p className="text-base-content/60">
-        ต้องมีสิทธิ์ผู้ดูแลระบบจึงจะดูรายการประกันได้
-      </p>
+      <Card title={title}>
+        <p className="text-base-content/60">
+          ต้องมีสิทธิ์ผู้ดูแลระบบจึงจะดูรายการประกันได้
+        </p>
+      </Card>
     )
   }
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
-  if (isError) return <p className="text-error">ไม่สามารถโหลดรายการประกันได้</p>
+  const action: ReactNode = (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      onClick={() => formDialogRef.current?.open()}
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      เพิ่มรายการประกัน
+    </button>
+  )
+
+  if (isLoading)
+    return (
+      <Card title={title} action={action}>
+        <span className="loading loading-spinner loading-md" />
+      </Card>
+    )
+  if (isError)
+    return (
+      <Card title={title} action={action}>
+        <p className="text-error">ไม่สามารถโหลดรายการประกันได้</p>
+      </Card>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <Card title={title} action={action}>
+      <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
           <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
           <input
@@ -121,19 +162,18 @@ export function WarrantyList() {
           />
         </label>
 
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
-          onClick={() => formDialogRef.current?.open()}
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          เพิ่มรายการประกัน
-        </button>
+        <label className="label cursor-pointer gap-2">
+          <input
+            type="checkbox"
+            className="toggle toggle-sm"
+            checked={expiringSoon}
+            onChange={(event) => setExpiringSoon(event.target.checked)}
+          />
+          <span className="label-text">ใกล้หมดประกัน (30 วัน)</span>
+        </label>
       </div>
 
-      {!warranties || warranties.length === 0 ? (
-        <p className="text-base-content/60">ยังไม่มีรายการประกันในระบบ</p>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="py-6 text-center text-base-content/60">
           ไม่พบรายการที่ตรงกับเงื่อนไข
         </p>
@@ -151,10 +191,12 @@ export function WarrantyList() {
               </tr>
             </thead>
             <tbody>
-              {paged.map((warranty) => (
+              {paged.map((warranty) => {
+                const device = deviceBySerial.get(warranty.serial)
+                return (
                 <tr key={warranty.id}>
                   <td className="font-medium">
-                    {warranty.devName ?? warranty.serial}
+                    {device ? (device.name ?? '-') : warranty.serial}
                     <div className="font-mono text-xs text-base-content/50">
                       {warranty.serial}
                     </div>
@@ -195,7 +237,8 @@ export function WarrantyList() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -230,6 +273,7 @@ export function WarrantyList() {
         isLoading={deleteWarranty.isPending}
         onConfirm={() => deleteWarranty.mutate(targetIdRef.current)}
       />
-    </div>
+      </div>
+    </Card>
   )
 }

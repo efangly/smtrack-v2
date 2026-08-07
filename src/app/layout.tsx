@@ -1,14 +1,24 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 
 import { Providers } from '@/components/Providers'
 import { THEME_STORAGE_KEY } from '@/lib/theme'
 
 import './globals.css'
 
-const geistSans = Geist({
+const anuphan = localFont({
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  src: [
+    { path: '../../public/fonts/Anuphan-Thin.ttf', weight: '100', style: 'normal' },
+    { path: '../../public/fonts/Anuphan-ExtraLight.ttf', weight: '200', style: 'normal' },
+    { path: '../../public/fonts/Anuphan-Light.ttf', weight: '300', style: 'normal' },
+    { path: '../../public/fonts/Anuphan-Regular.ttf', weight: '400', style: 'normal' },
+    { path: '../../public/fonts/Anuphan-Medium.ttf', weight: '500', style: 'normal' },
+    { path: '../../public/fonts/Anuphan-SemiBold.ttf', weight: '600', style: 'normal' },
+    { path: '../../public/fonts/Anuphan-Bold.ttf', weight: '700', style: 'normal' },
+  ],
+  display: 'swap',
 })
 
 const geistMono = Geist_Mono({
@@ -47,7 +57,7 @@ export default function RootLayout({
     <html
       lang="th"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${anuphan.variable} ${geistMono.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

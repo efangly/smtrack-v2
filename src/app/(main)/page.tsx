@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/Card'
 import { DeviceList } from '@/components/features/devices/DeviceList'
-import { DeviceStatsRow } from '@/components/features/devices/DeviceStatsRow'
+import { NotificationCategoryStatsRow } from '@/components/features/devices/NotificationCategoryStatsRow'
 
 export default function DashboardOverviewPage() {
   return (
@@ -12,7 +12,7 @@ export default function DashboardOverviewPage() {
         </p>
       </div>
 
-      <DeviceStatsRow />
+      <NotificationCategoryStatsRow />
 
       <Card
         title="อุปกรณ์ทั้งหมด"

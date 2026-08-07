@@ -39,9 +39,13 @@ export const CreateWarrantySchema = z.object({
 export type CreateWarrantyInput = z.infer<typeof CreateWarrantySchema>
 export type UpdateWarrantyInput = Partial<CreateWarrantyInput>
 
-export async function getWarranties(): Promise<Warranty[]> {
-  return fetchAllPages(async (params) => {
-    const { data } = await apiClient.get('/warranties', { params })
+export async function getWarranties(
+  params: { search?: string; expiringSoon?: boolean } = {},
+): Promise<Warranty[]> {
+  return fetchAllPages(async (pageParams) => {
+    const { data } = await apiClient.get('/warranties', {
+      params: { ...pageParams, ...params },
+    })
     return z.array(WarrantySchema).parse(data)
   })
 }

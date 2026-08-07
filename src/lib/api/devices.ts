@@ -40,7 +40,7 @@ export type Device = z.infer<typeof DeviceSchema>
 export const CreateDeviceSchema = z.object({
   serial: z.string().min(1),
   ward: z.string().min(1),
-  staticName: z.string().min(1),
+  staticName: z.string().min(1).optional(),
   name: z.string().optional(),
   status: z.boolean(),
   seq: z.number().int(),
@@ -57,6 +57,22 @@ export type CreateDeviceInput = z.infer<typeof CreateDeviceSchema> & {
 export type UpdateDeviceInput = Partial<z.infer<typeof CreateDeviceSchema>> & {
   positionPic?: File
 }
+
+// event `device` จาก SSE (`/devices/stream`, `/stream?channels=device,...`) — mirror
+// backend DeviceChangedEvent เสมอส่ง device row เต็มก้อนมาด้วย ไม่ต้อง GET /devices ซ้ำ
+export const DeviceChangedEventSchema = z.object({
+  action: z.enum(['created', 'updated', 'swapped', 'online', 'offline']),
+  deviceId: z.string(),
+  staticName: z.string(),
+  serial: z.string().nullable(),
+  previousSerial: z.string().nullable().optional(),
+  device: DeviceSchema,
+  at: z.string(),
+  actor: z
+    .object({ id: z.string(), name: z.string(), role: z.string() })
+    .optional(),
+})
+export type DeviceChangedEvent = z.infer<typeof DeviceChangedEventSchema>
 
 export const DeviceAssignmentSchema = z.object({
   id: z.string(),
@@ -83,9 +99,13 @@ export const SwapDeviceResultSchema = z.object({
 })
 export type SwapDeviceResult = z.infer<typeof SwapDeviceResultSchema>
 
-export async function getDevices(): Promise<Device[]> {
-  return fetchAllPages(async (params) => {
-    const { data } = await apiClient.get('/devices', { params })
+export async function getDevices(
+  params: { search?: string } = {},
+): Promise<Device[]> {
+  return fetchAllPages(async (pageParams) => {
+    const { data } = await apiClient.get('/devices', {
+      params: { ...pageParams, ...params },
+    })
     return z.array(DeviceSchema).parse(data)
   })
 }

@@ -1,9 +1,16 @@
 'use client'
 
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useWards } from '@/hooks/useWards'
 import type { CreateUserInput, UpdateUserInput, User } from '@/lib/api/users'
 import { resolveApiImageUrl } from '@/lib/imageUrl'
@@ -30,6 +37,15 @@ export const UserFormDialog = forwardRef<
   // เก็บทั้ง user ไม่ใช่แค่ id เพราะต้องใช้ pic เดิมมาแสดงเป็น preview
   const [editing, setEditing] = useState<User | null>(null)
   const { data: wards } = useWards()
+  const wardOptions = useMemo(
+    () =>
+      wards?.map((ward) => ({
+        value: ward.id,
+        label: ward.wardName,
+        hint: ward.hospital?.hosName,
+      })) ?? [],
+    [wards],
+  )
 
   const {
     register,
@@ -149,19 +165,27 @@ export const UserFormDialog = forwardRef<
             </div>
 
             <div className="form-control">
-              <label className="label-text mb-1 block text-xs">วอร์ด *</label>
-              <select
-                className="select select-sm select-bordered w-full"
-                {...register('wardId', { required: 'กรุณาเลือกวอร์ด' })}
+              <label
+                htmlFor="user-ward"
+                className="label-text mb-1 block text-xs"
               >
-                <option value="">- เลือกวอร์ด -</option>
-                {wards?.map((ward) => (
-                  <option key={ward.id} value={ward.id}>
-                    {ward.wardName}
-                    {ward.hospital ? ` — ${ward.hospital.hosName}` : ''}
-                  </option>
-                ))}
-              </select>
+                วอร์ด *
+              </label>
+              <Controller
+                control={control}
+                name="wardId"
+                rules={{ required: 'กรุณาเลือกวอร์ด' }}
+                render={({ field }) => (
+                  <SearchableSelect
+                    id="user-ward"
+                    options={wardOptions}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="- เลือกวอร์ด -"
+                  />
+                )}
+              />
               <span className="mt-1 text-xs text-error empty:hidden">
                 {errors.wardId?.message}
               </span>

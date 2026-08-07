@@ -5,19 +5,21 @@ import { Bell, BellOff } from 'lucide-react'
 
 import { Dropdown } from '@/components/ui/Dropdown'
 import { LiveStatus } from '@/components/ui/LiveStatus'
+import { classifyNotification, TONE_CLASS } from '@/lib/notificationType'
 import { formatDateTime, formatTimeShort } from '@/lib/utils'
+import { useMarkAllNotificationsRead } from '@/hooks/useNotifications'
 import { useNotificationFeedStore } from '@/store/useNotificationFeedStore'
 
 export function NotificationBell() {
   const items = useNotificationFeedStore((state) => state.items)
   const unreadCount = useNotificationFeedStore((state) => state.unreadCount)
   const status = useNotificationFeedStore((state) => state.status)
-  const markAllRead = useNotificationFeedStore((state) => state.markAllRead)
+  const markAllRead = useMarkAllNotificationsRead()
 
   return (
     <Dropdown
       ariaLabel="การแจ้งเตือน"
-      onOpen={markAllRead}
+      onOpen={() => markAllRead.mutate()}
       panelClassName="w-80 sm:w-96"
       trigger={
         <span className="indicator">
@@ -47,41 +49,49 @@ export function NotificationBell() {
               <p className="text-sm text-base-content/60">
                 ยังไม่มีการแจ้งเตือนใหม่
               </p>
-              <p className="text-xs text-base-content/40">
-                นับเฉพาะที่เข้ามาระหว่างเปิดแอปนี้
-              </p>
             </div>
           ) : (
             <ul className="scrollbar-slim max-h-80 divide-y divide-base-300 overflow-y-auto">
-              {items.map((notification) => (
-                <li key={notification.id}>
-                  <Link
-                    href={`/notifications?serial=${encodeURIComponent(notification.serial)}`}
-                    className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-base-200"
-                    onClick={close}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="badge badge-ghost badge-sm font-mono">
-                        {notification.serial}
-                      </span>
-                      <span
-                        className="text-xs text-base-content/50"
-                        title={formatDateTime(notification.createAt)}
-                      >
-                        {formatTimeShort(notification.createAt)}
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">
-                      {notification.message}
-                    </span>
-                    {notification.detail && (
-                      <span className="line-clamp-2 text-xs text-base-content/60">
-                        {notification.detail}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
+              {items.map((notification) => {
+                const { icon: Icon, tone } = classifyNotification(
+                  notification.message,
+                )
+                return (
+                  <li key={notification.id}>
+                    <Link
+                      href={`/notifications?serial=${encodeURIComponent(notification.serial)}`}
+                      className="flex items-start gap-2 px-4 py-3 transition-colors hover:bg-base-200"
+                      onClick={close}
+                    >
+                      <Icon
+                        className={`mt-0.5 h-4 w-4 shrink-0 ${TONE_CLASS[tone]}`}
+                        aria-hidden="true"
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="badge badge-ghost badge-sm font-mono">
+                            {notification.serial}
+                          </span>
+                          <span
+                            className="text-xs text-base-content/50"
+                            title={formatDateTime(notification.createAt)}
+                          >
+                            {formatTimeShort(notification.createAt)}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium">
+                          {notification.message}
+                        </span>
+                        {notification.detail && (
+                          <span className="line-clamp-2 text-xs text-base-content/60">
+                            {notification.detail}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           )}
 

@@ -12,6 +12,13 @@ import { UserList } from './UserList'
 jest.mock('@/lib/api/users')
 jest.mock('@/lib/api/wards')
 
+// usePaginationParams เรียก useRouter/useSearchParams ซึ่งไม่มี app router ในเทส
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: jest.fn() }),
+  usePathname: () => '/settings/users',
+  useSearchParams: () => new URLSearchParams(),
+}))
+
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -137,13 +144,16 @@ describe('UserList', () => {
     const dialog = screen
       .getByText('เพิ่มผู้ใช้', { selector: 'h3' })
       .closest('.modal-box') as HTMLElement
-    // ฟอร์มนี้ใช้ <label> แบบไม่ผูก htmlFor จึงหา input ตามลำดับ/ชนิดแทน
+    // ช่องที่ยังใช้ <label> แบบไม่ผูก htmlFor ต้องหาตามลำดับ/ชนิดแทน
     await user.type(within(dialog).getAllByRole('textbox')[0], 'newbie')
     await user.type(
       dialog.querySelector('input[type="password"]') as HTMLElement,
       'secret',
     )
-    await user.selectOptions(within(dialog).getAllByRole('combobox')[0], 'w-1')
+    // ช่องวอร์ดเป็น SearchableSelect — เปิด panel แล้วคลิก option
+    // (panel ถูก portal ออกไปนอก .modal-box จึงหาด้วย screen ไม่ใช่ within(dialog))
+    await user.click(within(dialog).getByLabelText('วอร์ด *'))
+    await user.click(screen.getByRole('option', { name: /ICU/ }))
 
     const pic = new File(['x'], 'avatar.png', { type: 'image/png' })
     await user.upload(within(dialog).getByLabelText('รูปโปรไฟล์'), pic)

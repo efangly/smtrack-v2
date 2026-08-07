@@ -21,6 +21,17 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(currentSearch),
 }))
 
+// ตัวกรองเป็น SearchableSelect (combobox ที่พิมพ์ค้นได้) ไม่ใช่ native select แล้ว
+// จึงเลือกค่าด้วยการเปิด panel แล้วคลิก option แทน user.selectOptions()
+async function pickOption(
+  user: ReturnType<typeof userEvent.setup>,
+  comboboxName: string,
+  optionName: string,
+) {
+  await user.click(screen.getByRole('combobox', { name: comboboxName }))
+  await user.click(screen.getByRole('option', { name: optionName }))
+}
+
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -100,10 +111,7 @@ describe('DeviceList ward filter', () => {
     await screen.findByText('legacy-device')
     expect(screen.getByText('migrated-device')).toBeInTheDocument()
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'กรองตามโรงพยาบาล' }),
-      'h-1',
-    )
+    await pickOption(user, 'กรองตามโรงพยาบาล', 'รพ.ทดสอบ')
 
     expect(screen.getByText('legacy-device')).toBeInTheDocument()
     expect(screen.getByText('migrated-device')).toBeInTheDocument()
@@ -117,26 +125,17 @@ describe('DeviceList ward query string sync', () => {
     await screen.findByText('legacy-device')
 
     // เลือกโรงพยาบาล -> auto-select ward แรก -> ส่ง ward เดียวลง query
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'กรองตามโรงพยาบาล' }),
-      'h-1',
-    )
+    await pickOption(user, 'กรองตามโรงพยาบาล', 'รพ.ทดสอบ')
     expect(replace).toHaveBeenLastCalledWith('/?ward=w-1', { scroll: false })
 
     // เลือก ward กลับเป็น ALL -> ส่งทุกวอร์ดของโรงพยาบาลนั้นเป็น query ซ้ำ key เดียวกัน
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'กรองตามวอร์ด' }),
-      'all',
-    )
+    await pickOption(user, 'กรองตามวอร์ด', 'ALL')
     expect(replace).toHaveBeenLastCalledWith('/?ward=w-1&ward=w-2', {
       scroll: false,
     })
 
     // เลือกโรงพยาบาลกลับเป็น ALL -> ไม่ส่ง ward เลย
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'กรองตามโรงพยาบาล' }),
-      'all',
-    )
+    await pickOption(user, 'กรองตามโรงพยาบาล', 'ALL')
     expect(replace).toHaveBeenLastCalledWith('/', { scroll: false })
   })
 })

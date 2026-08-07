@@ -16,6 +16,7 @@ export const LogDaySchema = z.object({
   door3: z.boolean(),
   internet: z.boolean(),
   probe: z.string(),
+  probeId: z.string(),
   battery: z.number(),
   tempInternal: z.number().nullable(),
   extMemory: z.boolean(),
@@ -26,6 +27,7 @@ export type LogDay = z.infer<typeof LogDaySchema>
 
 export interface QueryTelemetryParams {
   serial?: string
+  probeId?: string
   from?: string
   to?: string
   limit?: number

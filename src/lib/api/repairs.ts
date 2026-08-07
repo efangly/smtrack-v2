@@ -73,3 +73,8 @@ export async function updateRepair(
   )
   return RepairSchema.parse(data)
 }
+
+export async function deleteRepair(id: string): Promise<Repair> {
+  const { data } = await apiClient.delete(`/repairs/${encodeURIComponent(id)}`)
+  return RepairSchema.parse(data)
+}

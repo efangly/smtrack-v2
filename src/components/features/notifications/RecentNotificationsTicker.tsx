@@ -6,7 +6,7 @@ import { formatDateTime, formatTimeShort } from '@/lib/utils'
 import { useNotificationFeedStore } from '@/store/useNotificationFeedStore'
 
 export function RecentNotificationsTicker() {
-  // อ่านจาก store กลาง — EventSource ตัวจริงอยู่ที่ NotificationFeedProvider
+  // อ่านจาก store กลาง — EventSource ตัวจริงอยู่ที่ RealtimeFeedProvider
   const items = useNotificationFeedStore((state) => state.items)
 
   if (items.length === 0) {

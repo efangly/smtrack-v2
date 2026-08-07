@@ -9,6 +9,7 @@ import {
   UploadCloud,
   UserCircle,
   Users,
+  Volume2,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -50,6 +51,11 @@ export const SETTINGS_ITEM: NavItem = {
   icon: Settings,
   children: [
     { href: '/settings/account', label: 'บัญชีของฉัน', icon: UserCircle },
+    {
+      href: '/settings/notifications',
+      label: 'เสียงแจ้งเตือน',
+      icon: Volume2,
+    },
     {
       href: '/settings/users',
       label: 'ผู้ใช้งาน',

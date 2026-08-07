@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
+import { Card } from '@/components/ui/Card'
 import {
   ConfirmDialog,
   type ConfirmDialogHandle,
@@ -57,35 +58,45 @@ export function WardList() {
   const totalItems = filtered.length
   const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
-  if (isError) return <p className="text-error">ไม่สามารถโหลดรายการวอร์ดได้</p>
+  const action: ReactNode = canManage && (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      onClick={() => formDialogRef.current?.open()}
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      เพิ่มวอร์ด
+    </button>
+  )
+  const title = 'รายการวอร์ดทั้งหมด'
+
+  if (isLoading)
+    return (
+      <Card title={title} action={action}>
+        <span className="loading loading-spinner loading-md" />
+      </Card>
+    )
+  if (isError)
+    return (
+      <Card title={title} action={action}>
+        <p className="text-error">ไม่สามารถโหลดรายการวอร์ดได้</p>
+      </Card>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
-          <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
-          <input
-            type="search"
-            className="grow"
-            placeholder="ค้นหาชื่อวอร์ด / โรงพยาบาล"
-            aria-label="ค้นหาวอร์ด"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-        </label>
-
-        {canManage && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => formDialogRef.current?.open()}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            เพิ่มวอร์ด
-          </button>
-        )}
-      </div>
+    <Card title={title} action={action}>
+      <div className="flex flex-col gap-3">
+      <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
+        <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
+        <input
+          type="search"
+          className="grow"
+          placeholder="ค้นหาชื่อวอร์ด / โรงพยาบาล"
+          aria-label="ค้นหาวอร์ด"
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+        />
+      </label>
 
       {!wards || wards.length === 0 ? (
         <p className="text-base-content/60">ยังไม่มีวอร์ดในระบบ</p>
@@ -172,6 +183,7 @@ export function WardList() {
         isLoading={deleteWard.isPending}
         onConfirm={() => deleteWard.mutate(targetIdRef.current)}
       />
-    </div>
+      </div>
+    </Card>
   )
 }

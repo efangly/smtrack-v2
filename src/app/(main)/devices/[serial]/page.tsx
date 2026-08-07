@@ -9,10 +9,7 @@ import { ProbeList } from '@/components/features/devices/ProbeList'
 import { RepairList } from '@/components/features/devices/RepairList'
 import { DeviceAuditTable } from '@/components/features/devices/DeviceAuditTable'
 import { SwapDeviceDialog } from '@/components/features/devices/SwapDeviceDialog'
-import { TelemetryGraph } from '@/components/features/telemetry/TelemetryGraph'
-import { TelemetryTable } from '@/components/features/telemetry/TelemetryTable'
-import { TelemetryLiveFeed } from '@/components/features/telemetry/TelemetryLiveFeed'
-import { DailyRollupChart } from '@/components/features/logday/DailyRollupChart'
+import { DeviceTelemetrySection } from '@/components/features/telemetry/DeviceTelemetrySection'
 import { NotificationList } from '@/components/features/notifications/NotificationList'
 import { NotificationLiveFeed } from '@/components/features/notifications/NotificationLiveFeed'
 import { getDeviceByStaticName } from '@/lib/api/devices'
@@ -59,47 +56,40 @@ export default async function DeviceDetailPage({
         }
       />
 
-      <Card title="กราฟอุณหภูมิ/ความชื้น/ประตู">
-        <TelemetryGraph serial={serial} />
-      </Card>
-
-      <Card title="สรุปรายวัน">
-        <DailyRollupChart serial={serial} />
-      </Card>
-
-      <Card
-        title="ข้อมูล telemetry ล่าสุด"
-        action={<TelemetryLiveFeed serial={serial} />}
-      >
-        <TelemetryTable serial={serial} />
-      </Card>
+      <DeviceTelemetrySection serial={serial} deviceId={device.id} />
 
       <Card
         title="การแจ้งเตือน"
         action={<NotificationLiveFeed serial={serial} />}
       >
-        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+        <Suspense
+          fallback={<span className="loading loading-spinner loading-md" />}
+        >
           <NotificationList serial={serial} />
         </Suspense>
       </Card>
 
-      <Card title="โพรบ">
-        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
-          <ProbeList deviceId={device.id} />
-        </Suspense>
-      </Card>
+      <Suspense fallback={<CardSkeleton title="โพรบ" />}>
+        <ProbeList deviceId={device.id} />
+      </Suspense>
 
-      <Card title="ประวัติการซ่อม">
-        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+      <div className="flex flex-col gap-6 xl:grid xl:grid-cols-2 xl:items-start">
+        <Suspense fallback={<CardSkeleton title="ประวัติการซ่อม" />}>
           <RepairList serial={serial} />
         </Suspense>
-      </Card>
 
-      <Card title="ประวัติการแก้ไข">
-        <Suspense fallback={<span className="loading loading-spinner loading-md" />}>
+        <Suspense fallback={<CardSkeleton title="ประวัติการแก้ไข" />}>
           <DeviceAuditTable staticName={device.staticName} />
         </Suspense>
-      </Card>
+      </div>
     </div>
+  )
+}
+
+function CardSkeleton({ title }: { title: string }) {
+  return (
+    <Card title={title}>
+      <span className="loading loading-spinner loading-md" />
+    </Card>
   )
 }

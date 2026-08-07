@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { KeyRound, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
 import {
   ConfirmDialog,
   type ConfirmDialogHandle,
@@ -79,11 +80,35 @@ export function UserList() {
   const totalItems = filtered.length
   const paged = filtered.slice((page - 1) * limit, (page - 1) * limit + limit)
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
-  if (isError) return <p className="text-error">ไม่สามารถโหลดรายการผู้ใช้ได้</p>
+  const action: ReactNode = canManage && (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      onClick={() => formDialogRef.current?.open()}
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      เพิ่มผู้ใช้
+    </button>
+  )
+  const title = 'รายการผู้ใช้งานทั้งหมด'
+  const description = 'ขอบเขตข้อมูลที่เห็นถูกจำกัดตามสิทธิ์ของบัญชีที่ใช้งานอยู่'
+
+  if (isLoading)
+    return (
+      <Card title={title} description={description} action={action}>
+        <span className="loading loading-spinner loading-md" />
+      </Card>
+    )
+  if (isError)
+    return (
+      <Card title={title} description={description} action={action}>
+        <p className="text-error">ไม่สามารถโหลดรายการผู้ใช้ได้</p>
+      </Card>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
+    <Card title={title} description={description} action={action}>
+      <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
           <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
@@ -97,34 +122,21 @@ export function UserList() {
           />
         </label>
 
-        <div className="flex items-center gap-2">
-          <select
-            className="select select-sm select-bordered"
-            aria-label="กรองตามสิทธิ์"
-            value={roleFilter}
-            onChange={(event) =>
-              setRoleFilter(event.target.value as Role | 'all')
-            }
-          >
-            <option value="all">ทุกสิทธิ์</option>
-            {ROLE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {ROLE_LABELS[option]}
-              </option>
-            ))}
-          </select>
-
-          {canManage && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => formDialogRef.current?.open()}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              เพิ่มผู้ใช้
-            </button>
-          )}
-        </div>
+        <select
+          className="select select-sm select-bordered"
+          aria-label="กรองตามสิทธิ์"
+          value={roleFilter}
+          onChange={(event) =>
+            setRoleFilter(event.target.value as Role | 'all')
+          }
+        >
+          <option value="all">ทุกสิทธิ์</option>
+          {ROLE_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {ROLE_LABELS[option]}
+            </option>
+          ))}
+        </select>
       </div>
 
       {!users || users.length === 0 ? (
@@ -241,6 +253,7 @@ export function UserList() {
         isLoading={deleteUser.isPending}
         onConfirm={() => deleteUser.mutate(targetIdRef.current)}
       />
-    </div>
+      </div>
+    </Card>
   )
 }

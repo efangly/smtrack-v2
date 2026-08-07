@@ -2,7 +2,10 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 
-import { NotificationSchema, type Notification } from '@/lib/api/notifications'
+import {
+  NotificationCreatedEventSchema,
+  type Notification,
+} from '@/lib/api/notifications'
 import { useSse, type SseStatus } from '@/hooks/useSse'
 
 const MAX_CACHED_NOTIFICATIONS = 100
@@ -14,7 +17,11 @@ export function useNotificationLiveFeed(serial: string): SseStatus {
     '/notifications/stream',
     'notification',
     (raw) => {
-      const notification = NotificationSchema.safeParse(raw)
+      // event นี้อาจเป็นการเปลี่ยนสถานะอ่านแล้ว (action: 'read'|'read-all', ไม่มี serial)
+      // ไม่ใช่แจ้งเตือนใหม่ — ข้ามไปเลย ไม่เกี่ยวกับ cache ของรายการ notification ต่อ serial
+      if (raw && typeof raw === 'object' && 'action' in raw) return
+
+      const notification = NotificationCreatedEventSchema.safeParse(raw)
       if (!notification.success || notification.data.serial !== serial) return
 
       queryClient.setQueryData<Notification[]>(

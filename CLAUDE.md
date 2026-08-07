@@ -26,18 +26,21 @@
 
 ```
 .
-├── app/                    # App Router pages & layouts
-│   ├── (auth)/             # route group สำหรับหน้า auth
-│   ├── (main)/             # route group สำหรับหน้าหลัก
-│   ├── layout.tsx
-│   └── page.tsx
-├── components/
-│   ├── ui/                 # base UI components (button, input, ฯลฯ)
-│   └── features/           # component เฉพาะ feature
-├── lib/                    # utility functions, helpers
-├── hooks/                  # custom React hooks
-├── types/                  # TypeScript types/interfaces
-├── styles/                 # global styles
+├── src/
+│   ├── app/                # App Router pages & layouts
+│   │   ├── (auth)/         # route group สำหรับหน้า auth
+│   │   ├── (main)/         # route group สำหรับหน้าหลัก
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css     # global styles (ไม่มีโฟลเดอร์ styles/ แยกต่างหาก)
+│   ├── components/
+│   │   ├── ui/              # base UI components (button, input, ฯลฯ)
+│   │   └── features/        # component เฉพาะ feature
+│   ├── lib/                 # utility functions, API clients
+│   ├── hooks/                # custom React hooks
+│   ├── store/                # Zustand stores (auth, theme, notification feed/sound)
+│   ├── types/                 # TypeScript types/interfaces
+│   └── proxy.ts               # middleware-level auth guard (เช็ค token cookie)
 ├── public/                 # static assets
 └── CLAUDE.md
 ```
@@ -131,10 +134,11 @@ npm test
 
 ### SSE stream การแจ้งเตือน
 
-- `/notifications/stream` มี EventSource **ตัวเดียวทั้งแอป** อยู่ที่ `NotificationFeedProvider` (mount ใน `src/app/(main)/layout.tsx`) ผลลัพธ์เก็บใน `src/store/useNotificationFeedStore.ts`
-- component ที่ต้องใช้ข้อมูล/สถานะ stream กลาง (`NotificationBell`, `RecentNotificationsTicker`, `ConnectionStatus`) ให้อ่านจาก store ห้ามเรียก `useSse` เพิ่มเอง
+- `/stream?channels=device,notification` มี EventSource **ตัวเดียวทั้งแอป** อยู่ที่ `RealtimeFeedProvider` (`src/components/features/realtime/RealtimeFeedProvider.tsx`, mount ใน `src/app/(main)/layout.tsx`) ผลลัพธ์ฝั่งการแจ้งเตือนเก็บใน `src/store/useNotificationFeedStore.ts` ส่วน event `device` ใช้ patch React Query cache ของ `['devices']` ตรง ๆ — `src/app/(main)/layout.tsx` ยัง mount `NotificationToastEmitter` (`src/components/features/notifications/NotificationToastEmitter.tsx`) คู่กันเพื่อโชว์ toast ของแจ้งเตือนที่เข้ามาระหว่างเปิดแอป
+- component ที่ต้องใช้ข้อมูล/สถานะ stream กลาง (`NotificationBell`, `RecentNotificationsTicker`) ให้อ่านจาก store ห้ามเรียก `useSse`/`useSseChannels` เพิ่มเอง
 - ส่วน `useNotificationLiveFeed` / `useTelemetryLiveFeed` เป็น stream ราย serial คนละหน้าที่กัน ยังเปิด connection ของตัวเองตามปกติ
 - API ไม่มี endpoint การแจ้งเตือนรวมทุกอุปกรณ์ ตัวเลขใน bell จึงนับเฉพาะ event ที่เข้ามาระหว่างเปิดแอป
+- `useSseChannels` (`src/hooks/useSse.ts`) มี reconnect ในตัวด้วย exponential backoff + jitter (base 1s, cap 30s, ไม่จำกัดจำนวนครั้ง) เมื่อ connection หลุดจะไม่ค้าง `error` เฉย ๆ — จะลอง reconnect เองเรื่อย ๆ โดยไม่ต้อง refresh หน้า, สถานะระหว่างรอ retry คือ `reconnecting` (ดู `SseStatus`/`LiveStatus`)
 
 ### สอง backend service — เลือก client ให้ถูก
 
@@ -151,7 +155,7 @@ npm test
 
 ### เมนูตั้งค่า (`/settings/*`)
 
-- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `users`, `wards`, `hospitals`, `devices`, `firmware` เป็น sub-route
+- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `notifications` (ตั้งค่าเสียงแจ้งเตือน), `users`, `wards`, `hospitals`, `devices`, `firmware`, `backup` เป็น sub-route
 - `<h1>ตั้งค่า</h1>` อยู่ที่ `src/app/(main)/settings/layout.tsx` **ที่เดียว** — หน้าย่อยใส่ได้แค่หัวข้อระดับการ์ด
 - เมนูย่อยประกาศใน `NavItem.children` (`src/components/layout/navItems.ts`) พร้อม `can` predicate ส่วน `SidebarNav` เป็นตัวกรองตาม role (ต้องผ่าน `useHydrated()` ก่อน ไม่งั้น hydration ไม่ตรง)
 - `src/proxy.ts` เช็คแค่ว่ามี token cookie **ไม่ได้เช็ค role** — หน้าที่จำกัดสิทธิ์ต้องครอบด้วย `SettingsGuard` (รับ prop เป็น key ไม่ใช่ function เพราะ page เป็น Server Component ส่ง function ข้าม boundary ไม่ได้)
@@ -159,13 +163,30 @@ npm test
 - `/settings/devices` เป็นทะเบียนอุปกรณ์ (เพิ่ม/แก้ไข) ส่วน `/devices` ยังเป็นหน้า monitoring เหมือนเดิม — backend ไม่มี endpoint ลบอุปกรณ์
 - `/settings/firmware` จัดการคลังเฟิร์มแวร์ (แยกจาก `hardware.firmware` ที่เป็นเวอร์ชันติดตั้งจริงบนอุปกรณ์แต่ละตัวใน `DeviceFormDialog`) — `version` เป็นค่าคงที่หลังสร้าง (แก้ไม่ได้, backend เมินถ้าส่งไปตอนอัปเดต), อัปโหลดซ้ำ version เดิมได้ 409, ดาวน์โหลดไฟล์ต้องลิงก์ตรงไป `GET /firmware/download/:version` (stream binary ดิบ ไม่ผ่าน `apiClient`/envelope)
 
-### ⚠️ `device.ward` ไม่ใช่วอร์ดของ auth service
+### `device.ward` คือวอร์ดของ auth service
 
-`ward` ของอุปกรณ์ (log service) เป็น **free text** เช่น `"ICU"`, `"OPD"` เก็บเป็นสตริงเปล่าๆ ไม่ได้ผูก
-foreign key กับตาราง `Wards` ของ auth service (ซึ่ง id เป็น `WID-...`/uuid และชื่อเป็นคนละชุด เช่น `DEV`,
-`รพ.สิงหนคร`) — ห้ามทำช่องวอร์ดในฟอร์มอุปกรณ์เป็น `<select>` ที่ส่ง ward id ไป เพราะจะทำให้ค่าเดิมหาย
-ตอนแก้ไขและเขียน id ปนลงไปในฟิลด์ที่เก็บชื่อ ใช้ `<input>` + `<datalist>` ที่รวบรวมชื่อวอร์ดจาก
-อุปกรณ์ที่มีอยู่แทน (ดู `DeviceFormDialog.tsx`)
+`ward` ของอุปกรณ์ (log service, `Device.ward: string` ใน `src/lib/api/devices.ts`) เป็น **free text**
+เก็บเป็นสตริงเปล่าๆ และไม่ได้ผูก foreign key จริงกับตาราง
+`Wards` ของ auth service — วอร์ดฝั่ง auth service มาจาก `hospital.ward[]` ที่ backend preload ติดมากับ
+`Hospital` (`src/lib/api/hospitals.ts`, `HospitalWardSchema`: `id` เป็น `WID-...`, `wardName`, `wardSeq`,
+`hosId`) เดียวกับที่ `/settings/wards` ใช้ CRUD ผ่าน `src/lib/api/wards.ts`
+
+**ความสัมพันธ์ที่ต้องรักษา**: ค่าที่เก็บในฟิลด์ `ward` ของอุปกรณ์ ต้องตรงกับ `hospital.ward[].id` ของวอร์ด
+ที่อุปกรณ์นั้นสังกัดอยู่จริง (ไม่ใช่ผูก foreign key ในฐานข้อมูล แต่เป็น "ค่าที่ควรเท่ากัน" ระหว่างสอง
+service) — ข้อมูลเก่าบางส่วนยังเก็บเป็น **ชื่อวอร์ด** ตรงๆ (เช่น `"ICU"`, `"OPD"`) แทนที่จะเป็น id แต่
+ข้อมูลที่ migrate ใหม่/อุปกรณ์ที่ลงทะเบียนผ่าน hospital-ward selector เก็บเป็น **`hospital.ward[].id`**
+(`"WID-xxxx"`) แล้ว — **เวลาย้าย ward ของอุปกรณ์ไปสังกัดวอร์ดอื่น ให้เขียน `hospital.ward[].id` ของวอร์ด
+ปลายทาง (string `WID-...`) ทับลงในฟิลด์ `ward` เดิม ผ่าน `updateDevice` (`PUT /device/:id`) เหมือนแก้ฟิลด์
+อื่น** ไม่มี endpoint/field พิเศษสำหรับ "ย้าย ward" ต่างหาก
+
+เพราะฟิลด์นี้เก็บได้ทั้งชื่อ (ของเก่า) และ wardId (ของใหม่) ปนกัน โค้ดที่ต้อง "จับคู่" device เข้ากับ
+วอร์ดของ auth service (เช่น filter ในหน้า devices) ต้องเทียบกับได้ทั้ง `ward.id` และ `ward.wardName` เสมอ
+(case-insensitive) — ดูตัวอย่างจริงที่ `matchesWard()` ใน `src/components/features/devices/DeviceList.tsx`
+
+ช่องวอร์ดในฟอร์มอุปกรณ์ยังคงห้ามทำเป็น `<select>` ที่ส่ง ward id ไปตรงๆ เพราะจะทำให้ค่าเดิมหายตอนแก้ไข
+ข้อมูลเก่าที่เก็บเป็นชื่อ ใช้ `<input>` + `<datalist>` ที่รวบรวมค่าที่มีอยู่จากอุปกรณ์เดิมแทน (ดู
+`DeviceFormDialog.tsx`) เพื่อรองรับทั้งการพิมพ์ชื่อ (backward-compat กับข้อมูลเก่า) และการวางค่า
+`hospital.ward[].id` ที่ได้จากฟอร์ม/ฟีเจอร์ย้าย ward
 
 ### ข้อควรระวังเรื่อง e2e
 

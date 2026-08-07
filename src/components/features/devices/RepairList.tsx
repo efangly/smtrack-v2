@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 
+import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
 import { useRepairs } from '@/hooks/useRepairs'
 import { useCreateRepair } from '@/hooks/useCreateRepair'
@@ -35,83 +36,98 @@ export function RepairList({ serial }: { serial: string }) {
 
   if (!canManage) {
     return (
-      <p className="text-base-content/60">
-        ต้องมีสิทธิ์ผู้ดูแลระบบจึงจะดูประวัติการซ่อมได้
-      </p>
+      <Card title="ประวัติการซ่อม">
+        <p className="text-base-content/60">
+          ต้องมีสิทธิ์ผู้ดูแลระบบจึงจะดูประวัติการซ่อมได้
+        </p>
+      </Card>
     )
   }
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
+  const action: ReactNode = (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      onClick={() => formDialogRef.current?.open()}
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      แจ้งซ่อม
+    </button>
+  )
+
+  if (isLoading)
+    return (
+      <Card title="ประวัติการซ่อม" action={action}>
+        <span className="loading loading-spinner loading-md" />
+      </Card>
+    )
   if (isError)
-    return <p className="text-error">ไม่สามารถโหลดประวัติการซ่อมได้</p>
+    return (
+      <Card title="ประวัติการซ่อม" action={action}>
+        <p className="text-error">ไม่สามารถโหลดประวัติการซ่อมได้</p>
+      </Card>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        className="btn btn-primary btn-sm self-start"
-        onClick={() => formDialogRef.current?.open()}
-      >
-        <Plus className="h-4 w-4" aria-hidden="true" />
-        แจ้งซ่อม
-      </button>
-
-      {!repairs || repairs.length === 0 ? (
-        <p className="text-base-content/60">ยังไม่มีประวัติการซ่อม</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>รายละเอียด</th>
-                <th>ผู้แจ้ง</th>
-                <th>สถานะ</th>
-                <th className="text-right">การจัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {repairs.map((repair) => (
-                <tr key={repair.id}>
-                  <td>{repair.seq}</td>
-                  <td>{repair.detail ?? repair.info ?? '-'}</td>
-                  <td>{repair.phone ?? '-'}</td>
-                  <td>{repair.status ?? '-'}</td>
-                  <td className="text-right">
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-xs"
-                      onClick={() => formDialogRef.current?.open(repair)}
-                    >
-                      แก้ไข
-                    </button>
-                  </td>
+    <Card title="ประวัติการซ่อม" action={action}>
+      <div className="flex flex-col gap-3">
+        {!repairs || repairs.length === 0 ? (
+          <p className="text-base-content/60">ยังไม่มีประวัติการซ่อม</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>รายละเอียด</th>
+                  <th>ผู้แจ้ง</th>
+                  <th>สถานะ</th>
+                  <th className="text-right">การจัดการ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {repairs.map((repair) => (
+                  <tr key={repair.id}>
+                    <td>{repair.seq}</td>
+                    <td>{repair.detail ?? repair.info ?? '-'}</td>
+                    <td>{repair.phone ?? '-'}</td>
+                    <td>{repair.status ?? '-'}</td>
+                    <td className="text-right">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => formDialogRef.current?.open(repair)}
+                      >
+                        แก้ไข
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      <Pagination
-        page={page}
-        limit={limit}
-        hasNextPage={hasNextPage}
-        onPageChange={setPage}
-        onLimitChange={setLimit}
-      />
+        <Pagination
+          page={page}
+          limit={limit}
+          hasNextPage={hasNextPage}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
 
-      <RepairFormDialog
-        ref={formDialogRef}
-        isSubmitting={createRepair.isPending || updateRepair.isPending}
-        onSubmit={(id, dto) => {
-          if (id) {
-            updateRepair.mutate({ id, dto })
-          } else {
-            createRepair.mutate({ ...dto, serial })
-          }
-        }}
-      />
-    </div>
+        <RepairFormDialog
+          ref={formDialogRef}
+          isSubmitting={createRepair.isPending || updateRepair.isPending}
+          onSubmit={(id, dto) => {
+            if (id) {
+              updateRepair.mutate({ id, dto })
+            } else {
+              createRepair.mutate({ ...dto, serial })
+            }
+          }}
+        />
+      </div>
+    </Card>
   )
 }

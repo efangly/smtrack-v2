@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
 
+import { Card } from '@/components/ui/Card'
 import {
   ConfirmDialog,
   type ConfirmDialogHandle,
@@ -46,25 +47,35 @@ export function FirmwareList() {
   const deleteDialogRef = useRef<ConfirmDialogHandle>(null)
   const targetIdRef = useRef<string>('')
 
-  if (isLoading) return <span className="loading loading-spinner loading-md" />
+  const action: ReactNode = canManage && (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      onClick={() => formDialogRef.current?.open()}
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      อัปโหลดเฟิร์มแวร์
+    </button>
+  )
+  const title = 'เฟิร์มแวร์'
+  const description = 'อัปโหลดและจัดการเวอร์ชันเฟิร์มแวร์สำหรับอุปกรณ์'
+
+  if (isLoading)
+    return (
+      <Card title={title} description={description} action={action}>
+        <span className="loading loading-spinner loading-md" />
+      </Card>
+    )
   if (isError)
-    return <p className="text-error">ไม่สามารถโหลดรายการเฟิร์มแวร์ได้</p>
+    return (
+      <Card title={title} description={description} action={action}>
+        <p className="text-error">ไม่สามารถโหลดรายการเฟิร์มแวร์ได้</p>
+      </Card>
+    )
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        {canManage && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => formDialogRef.current?.open()}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            อัปโหลดเฟิร์มแวร์
-          </button>
-        )}
-      </div>
-
+    <Card title={title} description={description} action={action}>
+      <div className="flex flex-col gap-3">
       {!firmwares || firmwares.length === 0 ? (
         <p className="text-base-content/60">ยังไม่มีเฟิร์มแวร์ในระบบ</p>
       ) : (
@@ -162,6 +173,7 @@ export function FirmwareList() {
         isLoading={deleteFirmware.isPending}
         onConfirm={() => deleteFirmware.mutate(targetIdRef.current)}
       />
-    </div>
+      </div>
+    </Card>
   )
 }
