@@ -259,7 +259,7 @@ export function DeviceList() {
           ไม่พบอุปกรณ์ที่ตรงกับเงื่อนไข
         </p>
       ) : view === 'grid' ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {paged.map((device) => (
             <DeviceCard key={device.id} device={device} />
           ))}
