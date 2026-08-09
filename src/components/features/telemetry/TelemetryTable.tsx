@@ -1,22 +1,26 @@
 'use client'
 
 import { useTelemetry } from '@/hooks/useTelemetry'
+import type { TelemetryRange } from '@/lib/api/telemetry'
 import { formatDateTime } from '@/lib/utils'
 
 export function TelemetryTable({
   serial,
   probeId,
+  range,
   from,
   to,
 }: {
   serial: string
   probeId?: string
+  range?: TelemetryRange
   from?: string
   to?: string
 }) {
   const { data, isLoading, isError } = useTelemetry({
     serial,
     probeId,
+    range,
     from,
     to,
   })

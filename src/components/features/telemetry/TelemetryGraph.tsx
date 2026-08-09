@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 
 import { useTelemetry } from '@/hooks/useTelemetry'
+import type { TelemetryRange } from '@/lib/api/telemetry'
 
 import { TelemetryChartModal, type TelemetryChartModalHandle } from './TelemetryChartModal'
 import { TelemetryChartStack } from './TelemetryChartStack'
@@ -15,6 +16,7 @@ export interface TelemetryGraphHandle {
 export const TelemetryGraph = forwardRef<TelemetryGraphHandle, {
   serial: string
   probeId?: string
+  range?: TelemetryRange
   from?: string
   to?: string
   tempMin?: number | null
@@ -23,12 +25,13 @@ export const TelemetryGraph = forwardRef<TelemetryGraphHandle, {
   deviceName?: string | null
   probeName?: string | null
 }>(function TelemetryGraph(
-  { serial, probeId, from, to, tempMin, tempMax, title = 'กราฟ telemetry', deviceName, probeName },
+  { serial, probeId, range, from, to, tempMin, tempMax, title = 'กราฟ telemetry', deviceName, probeName },
   ref,
 ) {
   const { data, isLoading, isError } = useTelemetry({
     serial,
     probeId,
+    range,
     from,
     to,
   })
