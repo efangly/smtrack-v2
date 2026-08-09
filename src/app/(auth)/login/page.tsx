@@ -14,7 +14,7 @@ export default function LoginPage() {
   return (
     <LoginGuard>
       <div className="w-full max-w-md">
-        <div className="card border border-base-300 bg-base-100 shadow-sm">
+        <div className="card surface-card">
           <div className="card-body gap-5 p-6 md:p-8">
             {/* จอใหญ่มีแผงแบรนด์ด้านซ้ายอยู่แล้ว จึงโชว์ตราย่อเฉพาะจอเล็ก */}
             <div className="flex items-center gap-3 lg:hidden">

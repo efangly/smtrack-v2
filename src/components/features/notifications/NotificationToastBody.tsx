@@ -2,7 +2,11 @@ import { X } from 'lucide-react'
 import toast, { type Toast } from 'react-hot-toast'
 
 import type { Notification } from '@/lib/api/notifications'
-import { classifyNotification, TONE_CLASS } from '@/lib/notificationType'
+import {
+  CATEGORY_ACCENT_CLASS,
+  classifyNotification,
+  TONE_CLASS,
+} from '@/lib/notificationType'
 
 export function NotificationToastBody({
   t,
@@ -11,17 +15,23 @@ export function NotificationToastBody({
   t: Toast
   notification: Notification
 }) {
-  const { icon: Icon, tone } = classifyNotification(notification.message)
+  const {
+    icon: Icon,
+    tone,
+    category,
+  } = classifyNotification(notification.message)
 
   return (
     <div
-      className={`card surface-card w-80 border border-base-300 shadow-lg ${
+      // surface-card ให้ขอบ/เงามาแล้ว ไม่ต้องประกาศ border ซ้ำ
+      data-accent={tone === 'error' ? 'active' : 'quiet'}
+      className={`accent-bar card surface-card w-80 shadow-lg ${CATEGORY_ACCENT_CLASS[category]} ${
         t.visible ? 'animate-enter' : 'animate-leave'
       }`}
       role="status"
       onClick={() => toast.dismiss(t.id)}
     >
-      <div className="card-body gap-1 p-3">
+      <div className="card-body gap-1 p-3 pl-4">
         <div className="flex items-center justify-between gap-2">
           <span className="badge badge-ghost badge-sm font-mono">
             {notification.serial}

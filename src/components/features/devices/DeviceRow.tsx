@@ -19,7 +19,7 @@ export function DeviceRow({ device }: { device: Device }) {
   const multiProbe = probes && probes.length > 1 ? probes : undefined
 
   return (
-    <tr className="hover">
+    <tr className="hover:bg-primary/5">
       <td className="min-w-[120px] whitespace-nowrap">
         <Link href={href} className="link link-primary font-mono">
           {device.serial ?? '-'}

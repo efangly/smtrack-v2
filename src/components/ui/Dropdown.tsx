@@ -60,7 +60,7 @@ export function Dropdown({
       {open && (
         <div
           role="menu"
-          className={`absolute right-0 z-50 mt-2 rounded-box border border-base-300 bg-base-100 shadow-xl ${panelClassName}`}
+          className={`surface-card absolute right-0 z-50 mt-2 shadow-xl ${panelClassName}`}
         >
           {children(() => setOpen(false))}
         </div>

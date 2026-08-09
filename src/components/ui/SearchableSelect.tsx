@@ -236,7 +236,7 @@ export function SearchableSelect({
             role="listbox"
             aria-label={ariaLabel}
             style={panelStyle}
-            className="scrollbar-slim z-50 overflow-y-auto rounded-box border border-base-300 bg-base-100 py-1 shadow-xl"
+            className="surface-card scrollbar-slim z-50 overflow-y-auto py-1 shadow-xl"
           >
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-sm text-base-content/60">

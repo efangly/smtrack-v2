@@ -1,13 +1,27 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { Maximize2 } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { useProbes } from '@/hooks/useProbes'
 
-import { TelemetryGraph } from './TelemetryGraph'
+import { TelemetryGraph, type TelemetryGraphHandle } from './TelemetryGraph'
 import { TelemetryLiveFeed } from './TelemetryLiveFeed'
 import { TelemetryTable } from './TelemetryTable'
+
+function ExpandChartButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="btn btn-ghost btn-sm btn-square"
+      aria-label="ขยายกราฟเต็มจอ"
+      onClick={onClick}
+    >
+      <Maximize2 className="size-4" />
+    </button>
+  )
+}
 
 const RANGE_OPTIONS = [
   { value: '1', label: '1 วัน' },
@@ -20,9 +34,11 @@ type RangeDays = (typeof RANGE_OPTIONS)[number]['value']
 export function DeviceTelemetrySection({
   serial,
   deviceId,
+  deviceName,
 }: {
   serial: string
   deviceId: string
+  deviceName?: string | null
 }) {
   const [days, setDays] = useState<RangeDays>('1')
   // อุปกรณ์ที่มีมากกว่า 1 probe ต้องแยกกราฟ/ตารางต่อ probe ไม่งั้นข้อมูลจากทุก probe
@@ -31,6 +47,9 @@ export function DeviceTelemetrySection({
   // แบบเดิมแทนที่จะบล็อกทั้งหน้า
   const { data: probes } = useProbes(deviceId, { limit: 100 })
   const hasMultipleProbes = (probes?.length ?? 0) > 1
+
+  const singleGraphRef = useRef<TelemetryGraphHandle>(null)
+  const probeGraphRefs = useRef<Map<string, TelemetryGraphHandle>>(new Map())
 
   // คำนวณด้วย useMemo ผูกกับ days เท่านั้น ไม่งั้น `to` จะขยับทุก re-render
   // ทำให้ queryKey ของ useTelemetry เปลี่ยนตลอดและ refetch วนไม่รู้จบ
@@ -71,15 +90,29 @@ export function DeviceTelemetrySection({
             <div key={probe.id} className="flex flex-col gap-6">
               <Card
                 title={`กราฟอุณหภูมิ/ความชื้น/ประตู/อินเทอร์เน็ต${label}`}
-                action={rangeSelect}
+                action={
+                  <div className="flex items-center gap-2">
+                    {rangeSelect}
+                    <ExpandChartButton
+                      onClick={() => probeGraphRefs.current.get(probe.id)?.openFullscreen()}
+                    />
+                  </div>
+                }
               >
                 <TelemetryGraph
+                  ref={(handle) => {
+                    if (handle) probeGraphRefs.current.set(probe.id, handle)
+                    else probeGraphRefs.current.delete(probe.id)
+                  }}
                   serial={serial}
                   probeId={probe.id}
                   from={from}
                   to={to}
                   tempMin={probe.tempMin}
                   tempMax={probe.tempMax}
+                  title={`กราฟอุณหภูมิ/ความชื้น/ประตู/อินเทอร์เน็ต${label}`}
+                  deviceName={deviceName}
+                  probeName={probe.name}
                 />
               </Card>
 
@@ -98,16 +131,30 @@ export function DeviceTelemetrySection({
     )
   }
 
+  const singleProbeLabel = probes?.[0]?.name ? ` — ${probes[0].name}` : ''
+
   return (
     <div className="flex flex-col gap-6">
-      <Card title="กราฟอุณหภูมิ/ความชื้น/ประตู/อินเทอร์เน็ต" action={rangeSelect}>
+      <Card
+        title={`กราฟอุณหภูมิ/ความชื้น/ประตู/อินเทอร์เน็ต${singleProbeLabel}`}
+        action={
+          <div className="flex items-center gap-2">
+            {rangeSelect}
+            <ExpandChartButton onClick={() => singleGraphRef.current?.openFullscreen()} />
+          </div>
+        }
+      >
         <TelemetryGraph
+          ref={singleGraphRef}
           serial={serial}
           probeId={probes?.[0]?.id}
           from={from}
           to={to}
           tempMin={probes?.[0]?.tempMin}
           tempMax={probes?.[0]?.tempMax}
+          title={`กราฟอุณหภูมิ/ความชื้น/ประตู/อินเทอร์เน็ต${singleProbeLabel}`}
+          deviceName={deviceName}
+          probeName={probes?.[0]?.name}
         />
       </Card>
 

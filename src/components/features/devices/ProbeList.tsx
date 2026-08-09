@@ -73,8 +73,8 @@ export function ProbeList({ deviceId }: { deviceId: string }) {
         {!probes || probes.length === 0 ? (
           <p className="text-base-content/60">ยังไม่มีโพรบสำหรับอุปกรณ์นี้</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table table-sm">
+          <div className="overflow-x-auto scrollbar-slim">
+            <table className="table table-zebra table-sm">
               <thead>
                 <tr>
                   <th>ชื่อ</th>

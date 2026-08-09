@@ -13,7 +13,7 @@ export default function MainLayout({
       <NotificationToastEmitter />
       <div className="drawer lg:drawer-open">
         <input id="main-drawer" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-content flex min-h-screen flex-col bg-base-200">
+        <div className="app-surface drawer-content flex min-h-screen flex-col">
           <Topbar />
           <main className="flex-1">
             <div className="mx-auto w-full max-w-[1920px] p-2 md:p-4">

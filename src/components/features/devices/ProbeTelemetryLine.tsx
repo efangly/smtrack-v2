@@ -12,6 +12,13 @@ export const TONE_CLASS: Record<Tone, string> = {
   muted: 'text-base-content/30',
 }
 
+// พื้นหลังจาง ๆ ของ tile ที่ครอบไอคอน — ให้สถานะอ่านออกโดยไม่ต้องเพ่งที่สีไอคอนอย่างเดียว
+export const TONE_BG_CLASS: Record<Tone, string> = {
+  success: 'bg-success/10',
+  error: 'bg-error/10',
+  muted: '',
+}
+
 export function doorTone(open: boolean | null): Tone {
   if (open === null) return 'muted'
   return open ? 'error' : 'success'

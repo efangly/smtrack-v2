@@ -48,8 +48,8 @@ export function BackupMonthsTable() {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="table">
+    <div className="overflow-x-auto scrollbar-slim">
+      <table className="table table-zebra">
         <thead>
           <tr>
             <th>เดือน</th>

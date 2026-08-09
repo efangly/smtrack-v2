@@ -15,11 +15,42 @@
 :root[data-theme='light'] {
   --color-primary: oklch(52% 0.1 195);
   --color-primary-content: oklch(98% 0.01 195);
+  --color-secondary: oklch(52% 0.14 285);
+  --color-secondary-content: oklch(98% 0.01 285);
+  --color-accent: oklch(64% 0.14 70);
+  --color-accent-content: oklch(22% 0.04 70);
 }
 
 :root[data-theme='dark'] {
   --color-primary: oklch(70% 0.11 195);
   --color-primary-content: oklch(21% 0.03 195);
+  --color-secondary: oklch(68% 0.13 285);
+  --color-secondary-content: oklch(21% 0.04 285);
+  --color-accent: oklch(75% 0.13 70);
+  --color-accent-content: oklch(22% 0.04 70);
+}
+
+/* ---------- สีประจำหมวดการแจ้งเตือน ----------
+   ชุดเดียวใช้ทั้ง StatCard, รายการแจ้งเตือน และเส้นกราฟ (ดู .viz-root ด้านล่าง)
+   ธีมมืดยก lightness ขึ้นและลด chroma ลงเล็กน้อยให้ contrast บน base-100 ยังผ่าน */
+:root[data-theme='light'] {
+  --color-cat-temp: oklch(56% 0.17 25);
+  --color-cat-door: oklch(60% 0.14 55);
+  --color-cat-internet: oklch(54% 0.16 292);
+  --color-cat-plug: oklch(54% 0.13 150);
+  --color-cat-sdcard: oklch(55% 0.14 245);
+  --color-cat-sensor: oklch(54% 0.11 200);
+  --color-cat-report: oklch(58% 0.03 250);
+}
+
+:root[data-theme='dark'] {
+  --color-cat-temp: oklch(70% 0.15 25);
+  --color-cat-door: oklch(74% 0.13 55);
+  --color-cat-internet: oklch(70% 0.14 292);
+  --color-cat-plug: oklch(70% 0.12 150);
+  --color-cat-sdcard: oklch(70% 0.12 245);
+  --color-cat-sensor: oklch(70% 0.1 200);
+  --color-cat-report: oklch(70% 0.03 250);
 }
 
 /* แผงแบรนด์หน้า login: ธีมมืดใช้ teal เข้มแทน primary สว่าง ไม่ให้จ้าเกินไป
@@ -31,34 +62,40 @@
 
 /* ---------- chart tokens (recharts ใช้ผ่าน .viz-root) ---------- */
 
+/* สีเส้นดึงจาก --color-cat-* ชุดเดียวกับ StatCard/รายการแจ้งเตือน ส่วนสีโครงกราฟ
+   ผูกกับ base-* ของธีม จึงไม่ต้องประกาศค่าแยกต่อธีมอีก (ตัวแปรที่อ้างถึงสลับเองแล้ว) */
 .viz-root {
-  color-scheme: light;
-  --chart-surface: #fcfcfb;
-  --chart-text-secondary: #52514e;
-  --chart-muted: #898781;
-  --chart-grid: #e1e0d9;
-  --chart-axis: #c3c2b7;
-  --chart-series-temp: #2a78d6;
-  --chart-series-humidity: #eb6834;
-  --chart-series-door: #1f9d55;
-  --chart-series-internet: #7c5cbf;
-  --chart-threshold: #b08900;
+  --chart-surface: var(--color-base-100);
+  --chart-text-secondary: color-mix(
+    in oklch,
+    var(--color-base-content) 72%,
+    transparent
+  );
+  --chart-muted: color-mix(
+    in oklch,
+    var(--color-base-content) 50%,
+    transparent
+  );
+  --chart-grid: color-mix(in oklch, var(--color-base-content) 12%, transparent);
+  --chart-axis: color-mix(in oklch, var(--color-base-content) 25%, transparent);
+  --chart-series-temp: var(--color-cat-temp);
+  /* ความชื้นใช้โทนฟ้าเพื่อให้ห่างจากเส้นอุณหภูมิ (แดง) มากที่สุด — สองเส้นนี้
+     ทับกันในกราฟเดียวกัน ถ้าใช้ส้ม/แดงที่ hue ใกล้กันจะแยกไม่ออก */
+  --chart-series-humidity: var(--color-cat-sdcard);
+  --chart-series-door: var(--color-cat-plug);
+  --chart-series-internet: var(--color-cat-internet);
+  --chart-threshold: var(--color-accent);
 }
 
 /* ธีมถูก stamp ลง <html data-theme> ก่อน paint เสมอ (ดู inline script ใน layout.tsx)
-   จึงอ้างอิง data-theme อย่างเดียว ไม่ต้องพึ่ง prefers-color-scheme */
+   จึงอ้างอิง data-theme อย่างเดียว ไม่ต้องพึ่ง prefers-color-scheme
+   (เหลือแค่ color-scheme เพราะสีทั้งหมดอิงตัวแปรธีมแล้ว) */
+:root[data-theme='light'] .viz-root {
+  color-scheme: light;
+}
+
 :root[data-theme='dark'] .viz-root {
   color-scheme: dark;
-  --chart-surface: #1a1a19;
-  --chart-text-secondary: #c3c2b7;
-  --chart-muted: #898781;
-  --chart-grid: #2c2c2a;
-  --chart-axis: #383835;
-  --chart-series-temp: #3987e5;
-  --chart-series-humidity: #d95926;
-  --chart-series-door: #34c759;
-  --chart-series-internet: #a78bfa;
-  --chart-threshold: #d9a441;
 }
 
 /* ---------- shell utilities ---------- */
@@ -70,6 +107,19 @@
 
 @utility app-surface {
   background-color: var(--color-base-200);
+  background-image:
+    radial-gradient(
+      900px circle at 12% -8%,
+      color-mix(in oklch, var(--color-primary) 9%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      760px circle at 100% 0%,
+      color-mix(in oklch, var(--color-secondary) 7%, transparent),
+      transparent 58%
+    );
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 @utility surface-card {
@@ -79,9 +129,11 @@
   background-color: var(--color-base-100);
   box-shadow:
     0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent),
-    0 4px 12px -4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+    0 4px 12px -4px
+      color-mix(in oklch, var(--color-base-content) 10%, transparent);
 }
 
+/* hover เรืองสีตาม --accent ของการ์ดใบนั้น (ถ้าไม่ได้ตั้งไว้จะกลับไปใช้สีแบรนด์) */
 @utility surface-card-hover {
   transition:
     box-shadow 150ms ease,
@@ -89,13 +141,126 @@
   &:hover {
     border-color: color-mix(
       in oklch,
-      var(--color-primary) 35%,
+      var(--accent, var(--color-primary)) 35%,
       var(--color-base-300)
     );
     box-shadow:
       0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent),
-      0 10px 24px -8px color-mix(in oklch, var(--color-primary) 22%, transparent);
+      0 10px 24px -8px
+        color-mix(
+          in oklch,
+          var(--accent, var(--color-primary)) 22%,
+          transparent
+        );
   }
+}
+
+/* พื้นผิวของแถบข้าง/แถบบน: base-100 + ไล่สีแบรนด์จาง ๆ ให้ไม่แบนสนิท
+   (topbar โปร่งเล็กน้อยเพราะมี backdrop-blur ทับอยู่) */
+@utility sidebar-surface {
+  background-color: var(--color-base-100);
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--color-primary) 8%, transparent),
+    transparent 22rem
+  );
+}
+
+/* ผสม primary เข้าเนื้อพื้นหลังตรง ๆ (ไม่ใช่แค่ gradient ที่จางหายไปกลางจอ)
+   ให้ได้โทนเดียวกับ .table thead th ทั้งแถบ ไม่ใช่แค่ขอบซ้าย */
+@utility topbar-surface {
+  background-color: color-mix(
+    in oklch,
+    color-mix(in oklch, var(--color-base-100) 90%, var(--color-primary) 10%) 85%,
+    transparent
+  );
+}
+
+/* ---------- accent ประจำหมวด ----------
+   class .accent-* กำหนดแค่ "hue" ส่วน --accent ที่นำไปใช้จริงถูกเลือกด้วย data-accent
+   เพื่อให้การ์ดที่ยังไม่มีแจ้งเตือน (quiet) สีจางลงแต่ยังบอกหมวดได้
+   หมายเหตุ: เขียนเป็น class ธรรมดา ไม่ใช้ @utility เพราะชื่อถูกส่งมาจาก TS
+   (CATEGORY_ACCENT_CLASS) — Tailwind สแกนหาไม่เจอถ้าเป็น utility ที่ต้อง generate */
+.accent-temp {
+  --accent-hue: var(--color-cat-temp);
+}
+.accent-door {
+  --accent-hue: var(--color-cat-door);
+}
+.accent-internet {
+  --accent-hue: var(--color-cat-internet);
+}
+.accent-plug {
+  --accent-hue: var(--color-cat-plug);
+}
+.accent-sdcard {
+  --accent-hue: var(--color-cat-sdcard);
+}
+.accent-sensor {
+  --accent-hue: var(--color-cat-sensor);
+}
+.accent-report {
+  --accent-hue: var(--color-cat-report);
+}
+
+.accent-temp,
+.accent-door,
+.accent-internet,
+.accent-plug,
+.accent-sdcard,
+.accent-sensor,
+.accent-report {
+  --accent: var(--accent-hue);
+}
+
+/* accent ตามสถานะอุปกรณ์ (ไม่ใช่หมวดการแจ้งเตือน) — ใช้กับการ์ดในหน้า /devices */
+.accent-online {
+  --accent: var(--color-success);
+}
+.accent-offline {
+  --accent: var(--color-error);
+}
+.accent-alert {
+  --accent: var(--color-cat-temp);
+}
+
+[data-accent='quiet'] {
+  --accent: color-mix(
+    in oklch,
+    var(--accent-hue, var(--color-base-content)) 35%,
+    var(--color-base-300)
+  );
+}
+
+/* แถบสีซ้าย 3px เต็มความสูง — ใช้ ::before จึงไม่กิน layout ของลูก */
+@utility accent-bar {
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 3px;
+    background: var(--accent, var(--color-base-300));
+  }
+}
+
+@utility accent-chip {
+  background-color: color-mix(in oklch, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+@utility accent-text {
+  color: var(--accent);
+}
+
+@utility accent-wash {
+  background-image: linear-gradient(
+    to right,
+    color-mix(in oklch, var(--accent, var(--color-primary)) 14%, transparent),
+    transparent 60%
+  );
 }
 
 /* กริดจาง ๆ สำหรับแผงแบรนด์หน้า login (ไม่ต้องมีไฟล์ภาพ) */
@@ -122,6 +287,18 @@
   50% {
     opacity: 0.35;
   }
+}
+
+/* หัวตารางแยกจาก body ให้ชัด — ทำที่เดียวแทนการไล่ใส่ class ทุก <thead>
+   (ช่วย table-pin-rows ด้วย เพราะแถวที่ sticky ต้องมีพื้นทึบ)
+   ผสม primary เข้าไปจาง ๆ ในโทนเดียวกับ topbar-surface/sidebar-surface
+   ไม่ให้หัวตารางออกเทาล้วนขณะที่ chrome ส่วนอื่นออกโทนแบรนด์ */
+.table thead th {
+  background-color: color-mix(
+    in oklch,
+    var(--color-base-200) 90%,
+    var(--color-primary) 10%
+  );
 }
 
 .status-dot {

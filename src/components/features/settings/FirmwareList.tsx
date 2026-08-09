@@ -79,8 +79,8 @@ export function FirmwareList() {
       {!firmwares || firmwares.length === 0 ? (
         <p className="text-base-content/60">ยังไม่มีเฟิร์มแวร์ในระบบ</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
+        <div className="overflow-x-auto scrollbar-slim">
+          <table className="table table-zebra table-sm">
             <thead>
               <tr>
                 <th>เวอร์ชัน</th>

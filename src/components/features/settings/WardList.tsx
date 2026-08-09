@@ -105,8 +105,8 @@ export function WardList() {
           ไม่พบวอร์ดที่ตรงกับเงื่อนไข
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
+        <div className="overflow-x-auto scrollbar-slim">
+          <table className="table table-zebra table-sm">
             <thead>
               <tr>
                 <th>ลำดับ</th>

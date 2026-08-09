@@ -1,4 +1,11 @@
-import { classifyNotification } from './notificationType'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+import {
+  CATEGORY_ACCENT_CLASS,
+  classifyNotification,
+  NOTIFICATION_FILTERS,
+} from './notificationType'
 
 describe('classifyNotification', () => {
   it('classifies box-level report messages', () => {
@@ -65,5 +72,27 @@ describe('classifyNotification', () => {
     const result = classifyNotification('unrecognized message')
     expect(result.category).toBe('other')
     expect(result.tone).toBe('muted')
+  })
+})
+
+describe('CATEGORY_ACCENT_CLASS', () => {
+  const globalsCss = readFileSync(
+    join(__dirname, '..', 'app', 'globals.css'),
+    'utf8',
+  )
+
+  it('covers every filter category except the all-pseudo-filter', () => {
+    for (const filter of NOTIFICATION_FILTERS) {
+      if (filter.value === 'all') continue
+      expect(CATEGORY_ACCENT_CLASS[filter.value]).toBeTruthy()
+    }
+  })
+
+  // กันไม่ให้ส่ง class ที่ Tailwind/globals.css ไม่รู้จัก (สีจะหายเงียบ ๆ)
+  it('only references accent classes that exist in globals.css', () => {
+    for (const accentClass of Object.values(CATEGORY_ACCENT_CLASS)) {
+      if (!accentClass) continue
+      expect(globalsCss).toContain(`.${accentClass} {`)
+    }
   })
 })

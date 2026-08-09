@@ -8,6 +8,12 @@ import { useAuthStore } from '@/store/useAuthStore'
 
 import { NAV_ITEMS, SETTINGS_ITEM } from './navItems'
 
+// สถานะ active ของเมนูใช้ชุดเดียวทั้ง 3 จุด (เมนูหลัก, หัวข้อตั้งค่า, เมนูย่อยตั้งค่า)
+// accent-wash ไม่ได้ตั้ง --accent ไว้จึงตกไปใช้ค่า fallback = สีแบรนด์ (ดู globals.css)
+const NAV_ACTIVE = 'accent-wash border-primary text-primary'
+const NAV_IDLE = 'border-transparent hover:bg-base-200'
+const NAV_LINK = 'gap-3 rounded-lg border-l-2 font-medium transition-colors'
+
 export function SidebarNav() {
   const pathname = usePathname()
   const hydrated = useHydrated()
@@ -36,11 +42,7 @@ export function SidebarNav() {
           <li key={item.href}>
             <Link
               href={item.href}
-              className={`gap-3 rounded-lg border-l-2 font-medium transition-colors ${
-                isActive(item.href)
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-transparent hover:bg-base-200'
-              }`}
+              className={`${NAV_LINK} ${isActive(item.href) ? NAV_ACTIVE : NAV_IDLE}`}
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               {item.label}
@@ -54,9 +56,7 @@ export function SidebarNav() {
       <li>
         <details open={isActive(SETTINGS_ITEM.href)}>
           <summary
-            className={`gap-3 rounded-lg font-medium ${
-              isActive(SETTINGS_ITEM.href) ? 'bg-primary/10 text-primary' : ''
-            }`}
+            className={`${NAV_LINK} ${isActive(SETTINGS_ITEM.href) ? NAV_ACTIVE : NAV_IDLE}`}
           >
             <SettingsIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="flex-1">{SETTINGS_ITEM.label}</span>
@@ -68,11 +68,7 @@ export function SidebarNav() {
                 <li key={child.href}>
                   <Link
                     href={child.href}
-                    className={`gap-3 rounded-lg border-l-2 transition-colors ${
-                      pathname === child.href
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-transparent hover:bg-base-200'
-                    }`}
+                    className={`${NAV_LINK} ${pathname === child.href ? NAV_ACTIVE : NAV_IDLE}`}
                   >
                     <ChildIcon
                       className="h-5 w-5 shrink-0"

@@ -3,13 +3,18 @@ import {
   DoorClosed,
   DoorOpen,
   FileText,
-  MemoryStick,
   Plug,
   Radio,
   Thermometer,
   WifiOff,
-  type LucideIcon,
 } from 'lucide-react'
+import type { ComponentType, SVGProps } from 'react'
+
+import { SdCardIcon } from '@/components/ui/icons/SdCardIcon'
+
+// lucide-react ไม่มีไอคอน SD card จึงใช้ SdCardIcon ที่วาดเอง (ดู DeviceTelemetryIcons.tsx) —
+// type ของ icon จึงต้องกว้างกว่า LucideIcon (ForwardRefExoticComponent) เพื่อรองรับ function component ทั่วไปด้วย
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
 
 export type Tone = 'success' | 'error' | 'muted'
 
@@ -20,14 +25,7 @@ export const TONE_CLASS: Record<Tone, string> = {
 }
 
 export type NotificationFilterValue =
-  | 'all'
-  | 'report'
-  | 'temp'
-  | 'door'
-  | 'sdcard'
-  | 'sensor'
-  | 'internet'
-  | 'plug'
+  'all' | 'report' | 'temp' | 'door' | 'sdcard' | 'sensor' | 'internet' | 'plug'
 
 // value ตรงกับ ?filter= ของ backend (notification.service.ts: filterToMessageContains)
 // ยกเว้น 'sensor' ที่ backend ไม่มี case ตั้งชื่อไว้ — ตกไป default ซึ่ง contains
@@ -36,22 +34,39 @@ export type NotificationFilterValue =
 export const NOTIFICATION_FILTERS: {
   value: NotificationFilterValue
   label: string
-  icon: LucideIcon
+  icon: IconComponent
   queryValue?: string
 }[] = [
   { value: 'all', label: 'ทั้งหมด', icon: Bell },
   { value: 'report', label: 'รายงาน', icon: FileText },
   { value: 'temp', label: 'อุณหภูมิ', icon: Thermometer },
   { value: 'door', label: 'ประตู', icon: DoorOpen },
-  { value: 'sdcard', label: 'SD Card', icon: MemoryStick },
+  { value: 'sdcard', label: 'SD Card', icon: SdCardIcon },
   { value: 'sensor', label: 'เซนเซอร์', icon: Radio, queryValue: 'SENSOR' },
   { value: 'internet', label: 'อินเทอร์เน็ต', icon: WifiOff },
   { value: 'plug', label: 'ไฟเข้า', icon: Plug },
 ]
 
+export type NotificationCategory =
+  Exclude<NotificationFilterValue, 'all'> | 'other'
+
+// class เหล่านี้ประกาศไว้ใน globals.css (ตั้ง --accent-hue ให้ subtree)
+// component ใช้คู่กับ accent-bar/accent-chip/accent-text เพื่อระบายสีตามหมวด
+// 'other' ไม่มีสีประจำ ปล่อยให้ตกไปที่ค่า fallback ของ accent-bar (base-300)
+export const CATEGORY_ACCENT_CLASS: Record<NotificationCategory, string> = {
+  temp: 'accent-temp',
+  door: 'accent-door',
+  sdcard: 'accent-sdcard',
+  sensor: 'accent-sensor',
+  internet: 'accent-internet',
+  plug: 'accent-plug',
+  report: 'accent-report',
+  other: '',
+}
+
 export interface NotificationClassification {
-  category: Exclude<NotificationFilterValue, 'all'> | 'other'
-  icon: LucideIcon
+  category: NotificationCategory
+  icon: IconComponent
   tone: Tone
 }
 
@@ -67,7 +82,7 @@ export function classifyNotification(
 
   switch (head) {
     case 'SD':
-      return { category: 'sdcard', icon: MemoryStick, tone: 'error' }
+      return { category: 'sdcard', icon: SdCardIcon, tone: 'error' }
     case 'AC':
       return { category: 'plug', icon: Plug, tone: 'error' }
     case 'INTERNET':

@@ -14,6 +14,7 @@ import { DeviceTelemetryIcons } from './DeviceTelemetryIcons'
 import {
   ProbeDoorBadges,
   ProbeInfoLine,
+  TONE_BG_CLASS as PROBE_TONE_BG_CLASS,
   TONE_CLASS,
   aggregateProbeTone,
 } from './ProbeTelemetryLine'
@@ -28,13 +29,24 @@ function formatTime(iso: string | undefined) {
 
 export function DeviceCard({ device }: { device: Device }) {
   const { data: telemetry } = useLatestTelemetry(device.serial)
-  const { data: probes, isLoading: probesLoading } = useDeviceProbeTelemetry(device.id)
+  const { data: probes, isLoading: probesLoading } = useDeviceProbeTelemetry(
+    device.id,
+  )
   const href = `/devices/${encodeURIComponent(device.staticName)}`
   const positionPicUrl = resolveDeviceImageUrl(device.positionPic)
   const doorProbes = probes?.filter((probe) => probe.doorQty > 0) ?? []
+  // แถบสีซ้าย: ออฟไลน์ = แดง, ออนไลน์แต่ probe มีปัญหา = สีหมวดอุณหภูมิ, ปกติ = เขียว
+  const probeTone = aggregateProbeTone(probes, device.online)
+  const accentClass = !device.online
+    ? 'accent-offline'
+    : probeTone === 'error'
+      ? 'accent-alert'
+      : 'accent-online'
 
   return (
-    <div className="flex flex-col gap-3 rounded-box surface-card p-4">
+    <div
+      className={`accent-bar surface-card surface-card-hover flex flex-col gap-3 rounded-box p-4 pl-5 ${accentClass}`}
+    >
       <div className="flex items-start gap-3">
         <Avatar
           src={positionPicUrl}
@@ -59,7 +71,9 @@ export function DeviceCard({ device }: { device: Device }) {
           </div>
 
           {device.position && (
-            <p className="truncate text-sm text-base-content/70">{device.position}</p>
+            <p className="truncate text-sm text-base-content/70">
+              {device.position}
+            </p>
           )}
         </div>
       </div>
@@ -73,7 +87,9 @@ export function DeviceCard({ device }: { device: Device }) {
       )}
 
       {probesLoading ? (
-        <div className="rounded-lg bg-base-200 px-3 py-2 text-sm text-base-content/50">…</div>
+        <div className="rounded-lg bg-base-200 px-3 py-2 text-sm text-base-content/50">
+          …
+        </div>
       ) : probes && probes.length > 0 ? (
         <div className="flex flex-col gap-2">
           {probes.map((probe) => (
@@ -84,7 +100,9 @@ export function DeviceCard({ device }: { device: Device }) {
                   {probe.tempDisplay !== null ? `${probe.tempDisplay}°C` : '—'}
                 </span>
                 <span className="rounded-lg border border-base-300 px-2.5 py-1">
-                  {probe.humidityDisplay !== null ? `${probe.humidityDisplay}%` : '—'}
+                  {probe.humidityDisplay !== null
+                    ? `${probe.humidityDisplay}%`
+                    : '—'}
                 </span>
               </span>
             </div>
@@ -97,9 +115,11 @@ export function DeviceCard({ device }: { device: Device }) {
           {formatTime(telemetry?.sendTime)}
         </span>
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-9 items-center justify-center rounded-lg border border-base-300 px-2">
+          <span
+            className={`inline-flex h-9 items-center justify-center rounded-lg border border-base-300 px-2 ${PROBE_TONE_BG_CLASS[probeTone]}`}
+          >
             <Thermometer
-              className={`h-4 w-4 ${TONE_CLASS[aggregateProbeTone(probes, device.online)]}`}
+              className={`h-4 w-4 ${TONE_CLASS[probeTone]}`}
               aria-label="สถานะ probe โดยรวม"
             />
           </span>

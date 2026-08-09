@@ -4,7 +4,11 @@ import Link from 'next/link'
 import { Bell, BellOff } from 'lucide-react'
 
 import { Dropdown } from '@/components/ui/Dropdown'
-import { classifyNotification, TONE_CLASS } from '@/lib/notificationType'
+import {
+  CATEGORY_ACCENT_CLASS,
+  classifyNotification,
+  TONE_CLASS,
+} from '@/lib/notificationType'
 import { formatDateTime, formatTimeShort } from '@/lib/utils'
 import { useMarkAllNotificationsRead } from '@/hooks/useNotifications'
 import { useNotificationFeedStore } from '@/store/useNotificationFeedStore'
@@ -50,14 +54,17 @@ export function NotificationBell() {
           ) : (
             <ul className="scrollbar-slim max-h-80 divide-y divide-base-300 overflow-y-auto">
               {items.map((notification) => {
-                const { icon: Icon, tone } = classifyNotification(
-                  notification.message,
-                )
+                const {
+                  icon: Icon,
+                  tone,
+                  category,
+                } = classifyNotification(notification.message)
                 return (
                   <li key={notification.id}>
                     <Link
                       href={`/notifications?serial=${encodeURIComponent(notification.serial)}`}
-                      className="flex items-start gap-2 px-4 py-3 transition-colors hover:bg-base-200"
+                      data-accent={tone === 'error' ? 'active' : 'quiet'}
+                      className={`accent-bar flex items-start gap-2 px-4 py-3 pl-5 transition-colors hover:bg-base-200 ${CATEGORY_ACCENT_CLASS[category]}`}
                       onClick={close}
                     >
                       <Icon

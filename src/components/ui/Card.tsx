@@ -4,6 +4,7 @@ export function Card({
   title,
   description,
   action,
+  accentClass,
   className = '',
   children,
 }: {
@@ -11,6 +12,8 @@ export function Card({
   description?: string
   /** เนื้อหาชิดขวาของหัวการ์ด เช่น ป้ายสถานะ live หรือปุ่มลัด */
   action?: ReactNode
+  /** class ประจำหมวดจาก CATEGORY_ACCENT_CLASS — ใส่แล้วได้แถบสีด้านซ้าย */
+  accentClass?: string
   className?: string
   children: ReactNode
 }) {
@@ -18,9 +21,11 @@ export function Card({
 
   return (
     <div
-      className={`card surface-card ${className}`}
+      className={`card surface-card ${accentClass ? `accent-bar ${accentClass}` : ''} ${className}`}
     >
-      <div className="card-body gap-4 p-4 md:p-5">
+      <div
+        className={`card-body gap-4 p-4 md:p-5 ${accentClass ? 'pl-5 md:pl-6' : ''}`}
+      >
         {hasHeader && (
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">

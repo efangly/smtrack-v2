@@ -1,32 +1,43 @@
 'use client'
 
+import { forwardRef, useImperativeHandle, useRef } from 'react'
+
 import { useTelemetry } from '@/hooks/useTelemetry'
 
-import { TelemetryMainChart } from './TelemetryMainChart'
-import { TelemetryStatusStrip } from './TelemetryStatusStrip'
-import { doorTick, internetTick, toChartData } from './telemetry-chart-utils'
+import { TelemetryChartModal, type TelemetryChartModalHandle } from './TelemetryChartModal'
+import { TelemetryChartStack } from './TelemetryChartStack'
+import { toChartData } from './telemetry-chart-utils'
 
-export function TelemetryGraph({
-  serial,
-  probeId,
-  from,
-  to,
-  tempMin,
-  tempMax,
-}: {
+export interface TelemetryGraphHandle {
+  openFullscreen: () => void
+}
+
+export const TelemetryGraph = forwardRef<TelemetryGraphHandle, {
   serial: string
   probeId?: string
   from?: string
   to?: string
   tempMin?: number | null
   tempMax?: number | null
-}) {
+  title?: string
+  deviceName?: string | null
+  probeName?: string | null
+}>(function TelemetryGraph(
+  { serial, probeId, from, to, tempMin, tempMax, title = 'กราฟ telemetry', deviceName, probeName },
+  ref,
+) {
   const { data, isLoading, isError } = useTelemetry({
     serial,
     probeId,
     from,
     to,
   })
+
+  const modalRef = useRef<TelemetryChartModalHandle>(null)
+
+  useImperativeHandle(ref, () => ({
+    openFullscreen: () => modalRef.current?.open(),
+  }))
 
   if (isLoading) return <span className="loading loading-spinner loading-md" />
   if (isError) return <p className="text-error">ไม่สามารถโหลดกราฟได้</p>
@@ -37,30 +48,24 @@ export function TelemetryGraph({
   const syncId = `telemetry-${serial}-${probeId ?? 'all'}`
 
   return (
-    <div className="viz-root flex flex-col gap-2">
-      <TelemetryMainChart
+    <>
+      <TelemetryChartStack
         data={chartData}
         syncId={syncId}
         tempMin={tempMin}
         tempMax={tempMax}
       />
-      <TelemetryStatusStrip
-        data={chartData}
-        dataKey="doorOpen"
-        label="ประตู"
-        color="var(--chart-series-door)"
-        tickFormatter={doorTick}
+      <TelemetryChartModal
+        ref={modalRef}
+        chartData={chartData}
         syncId={syncId}
+        tempMin={tempMin}
+        tempMax={tempMax}
+        title={title}
+        serial={serial}
+        deviceName={deviceName}
+        probeName={probeName}
       />
-      <TelemetryStatusStrip
-        data={chartData}
-        dataKey="internetUp"
-        label="อินเทอร์เน็ต"
-        color="var(--chart-series-internet)"
-        tickFormatter={internetTick}
-        syncId={syncId}
-        showXAxis
-      />
-    </div>
+    </>
   )
-}
+})

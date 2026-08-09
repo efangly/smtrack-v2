@@ -53,8 +53,8 @@ export function DeviceAuditTable({ staticName }: { staticName: string }) {
   return (
     <Card title="ประวัติการแก้ไข">
       <div className="flex flex-col gap-3">
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
+        <div className="overflow-x-auto scrollbar-slim">
+          <table className="table table-zebra table-sm">
             <thead>
               <tr>
                 <th>เวลา</th>

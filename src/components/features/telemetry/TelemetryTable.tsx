@@ -28,8 +28,8 @@ export function TelemetryTable({
     return <p className="text-base-content/60">ยังไม่มีข้อมูล</p>
 
   return (
-    <div className="max-h-96 overflow-y-auto overflow-x-auto">
-      <table className="table table-sm">
+    <div className="max-h-96 overflow-x-auto overflow-y-auto scrollbar-slim">
+      <table className="table table-zebra table-sm">
         <thead>
           <tr>
             <th>เวลา</th>

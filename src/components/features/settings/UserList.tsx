@@ -146,8 +146,8 @@ export function UserList() {
           ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
+        <div className="overflow-x-auto scrollbar-slim">
+          <table className="table table-zebra table-sm">
             <thead>
               <tr>
                 <th>ชื่อผู้ใช้</th>

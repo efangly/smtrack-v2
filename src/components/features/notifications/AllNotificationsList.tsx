@@ -3,7 +3,11 @@
 import { Pagination } from '@/components/ui/Pagination'
 import { useAllNotifications } from '@/hooks/useNotifications'
 import { usePaginationParams } from '@/hooks/usePaginationParams'
-import { classifyNotification, TONE_CLASS } from '@/lib/notificationType'
+import {
+  CATEGORY_ACCENT_CLASS,
+  classifyNotification,
+  TONE_CLASS,
+} from '@/lib/notificationType'
 import { formatDateTime } from '@/lib/utils'
 
 export function AllNotificationsList({ filter }: { filter?: string }) {
@@ -26,13 +30,17 @@ export function AllNotificationsList({ filter }: { filter?: string }) {
     <div className="flex flex-col gap-2">
       <ul className="flex flex-col gap-2">
         {data.data.map((notification) => {
-          const { icon: Icon, tone } = classifyNotification(
-            notification.message,
-          )
+          const {
+            icon: Icon,
+            tone,
+            category,
+          } = classifyNotification(notification.message)
           return (
             <li
               key={notification.id}
-              className="rounded-box border border-base-300 p-3"
+              // แถบซ้ายบอกหมวด ส่วนความเข้มบอกว่าเป็นเหตุผิดปกติหรือกลับสู่ปกติ
+              data-accent={tone === 'error' ? 'active' : 'quiet'}
+              className={`accent-bar rounded-box border border-base-300 p-3 pl-4 ${CATEGORY_ACCENT_CLASS[category]}`}
             >
               <div className="flex items-start gap-3">
                 <Icon

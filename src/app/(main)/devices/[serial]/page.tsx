@@ -56,7 +56,11 @@ export default async function DeviceDetailPage({
         }
       />
 
-      <DeviceTelemetrySection serial={serial} deviceId={device.id} />
+      <DeviceTelemetrySection
+        serial={serial}
+        deviceId={device.id}
+        deviceName={device.name}
+      />
 
       <Card
         title="การแจ้งเตือน"

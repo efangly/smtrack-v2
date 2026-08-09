@@ -6,6 +6,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -49,12 +50,24 @@ export function TelemetryMainChart({
   height = 240,
   tempMin,
   tempMax,
+  zoomable = false,
+  refAreaLeft,
+  refAreaRight,
+  onSelectStart,
+  onSelectMove,
+  onSelectEnd,
 }: {
   data: ChartRow[]
   syncId: string
   height?: number
   tempMin?: number | null
   tempMax?: number | null
+  zoomable?: boolean
+  refAreaLeft?: string
+  refAreaRight?: string
+  onSelectStart?: (label: string) => void
+  onSelectMove?: (label: string) => void
+  onSelectEnd?: () => void
 }) {
   // คลิกที่ legend เพื่อซ่อน/แสดงเส้นแต่ละเส้น — เก็บ key ที่ถูกซ่อนไว้ใน state
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
@@ -68,6 +81,23 @@ export function TelemetryMainChart({
         data={data}
         syncId={syncId}
         margin={{ top: 4, right: 8, left: -16, bottom: 0 }}
+        style={zoomable ? { cursor: 'crosshair' } : undefined}
+        onMouseDown={
+          zoomable
+            ? (state: { activeLabel?: string | number }) => {
+                if (state?.activeLabel !== undefined) onSelectStart?.(String(state.activeLabel))
+              }
+            : undefined
+        }
+        onMouseMove={
+          zoomable
+            ? (state: { activeLabel?: string | number }) => {
+                if (refAreaLeft && state?.activeLabel !== undefined)
+                  onSelectMove?.(String(state.activeLabel))
+              }
+            : undefined
+        }
+        onMouseUp={zoomable ? () => onSelectEnd?.() : undefined}
       >
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis
@@ -120,6 +150,16 @@ export function TelemetryMainChart({
         />
         <ThresholdLine y={tempMin} label="Min" />
         <ThresholdLine y={tempMax} label="Max" />
+        {zoomable && refAreaLeft && refAreaRight && (
+          <ReferenceArea
+            yAxisId="temp"
+            x1={refAreaLeft}
+            x2={refAreaRight}
+            strokeOpacity={0.3}
+            fill="var(--chart-threshold)"
+            fillOpacity={0.15}
+          />
+        )}
         <Line
           yAxisId="temp"
           type="monotone"
