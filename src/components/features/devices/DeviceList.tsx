@@ -9,6 +9,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useDevices } from '@/hooks/useDevices'
 import { useHospitals } from '@/hooks/useHospitals'
 import { usePaginationParams } from '@/hooks/usePaginationParams'
+import { matchesWard } from '@/lib/wardMatch'
 
 import { DeviceCard } from './DeviceCard'
 import { DeviceRow } from './DeviceRow'
@@ -90,21 +91,6 @@ export function DeviceList() {
     setWardId(firstWard?.id ?? ALL)
   }
 
-  // device.ward (log service) เป็น free text คนละชุดกับ Ward ของ auth service —
-  // ไม่มี wardId/hosId ผูกกับ device จริง ข้อมูลเก่าเก็บเป็น "ชื่อวอร์ด" แต่ข้อมูล
-  // ที่ migrate มาใหม่บางส่วนกลับเก็บ wardId (เช่น "WID-xxxx") ลงในฟิลด์เดียวกัน
-  // จึงต้องเทียบกับได้ทั้ง id และชื่อ (case-insensitive) ไม่ใช่ชื่ออย่างเดียว
-  function matchesWard(
-    device: NonNullable<typeof devices>[number],
-    ward: (typeof wardOptions)[number],
-  ) {
-    const deviceWard = device.ward.trim().toLowerCase()
-    return (
-      deviceWard === ward.id.toLowerCase() ||
-      deviceWard === ward.wardName.trim().toLowerCase()
-    )
-  }
-
   // keyword ถูกส่งเป็น ?search= ไปกรองที่ backend แล้ว (ดู useDevices ด้านบน) — เหลือแค่
   // status/ward ที่ยังต้อง filter ฝั่ง client เพราะ backend ยังไม่รองรับ
   const filtered = devices
@@ -115,9 +101,11 @@ export function DeviceList() {
         if (hospitalId !== ALL) {
           if (wardId !== ALL) {
             const selectedWard = wardOptions.find((ward) => ward.id === wardId)
-            if (!selectedWard || !matchesWard(device, selectedWard))
+            if (!selectedWard || !matchesWard(device.ward, selectedWard))
               return false
-          } else if (!wardOptions.some((ward) => matchesWard(device, ward))) {
+          } else if (
+            !wardOptions.some((ward) => matchesWard(device.ward, ward))
+          ) {
             return false
           }
         }

@@ -36,7 +36,7 @@ export function NotificationCategoryStatsRow() {
   const repairsInProgress = useRepairsInProgressCount()
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-7">
       {CATEGORIES.map(({ category, label, field }) => {
         const filter = NOTIFICATION_FILTERS.find((f) => f.value === category)!
         const count = data?.[field]
@@ -56,7 +56,7 @@ export function NotificationCategoryStatsRow() {
         )
       })}
       <StatCard
-        label="ประกันใกล้หมด"
+        label="ประกัน"
         value={
           warranty.isError || warranty.data === undefined
             ? '—'
@@ -69,7 +69,7 @@ export function NotificationCategoryStatsRow() {
         loading={warranty.isLoading}
       />
       <StatCard
-        label="แจ้งซ่อมที่กำลังดำเนินการ"
+        label="แจ้งซ่อม"
         value={
           repairsInProgress.isError || repairsInProgress.data === undefined
             ? '—'

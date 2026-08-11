@@ -4,14 +4,8 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 
-import {
-  clearStoredRefreshToken,
-  clearStoredToken,
-  getStoredRefreshToken,
-  getStoredToken,
-  setStoredRefreshToken,
-  setStoredToken,
-} from '@/lib/authToken'
+import { getStoredRefreshToken, getStoredToken } from '@/lib/authToken'
+import { useAuthStore } from '@/store/useAuthStore'
 import type { RefreshResult } from '@/types/auth'
 
 export class ApiError extends Error {
@@ -123,9 +117,14 @@ export const authApiClient = createApiClient(
   process.env.NEXT_PUBLIC_AUTH_API_BASE_URL,
 )
 
+let redirecting = false
+
+// window.location.href ด้านล่างทำ full reload อยู่แล้ว จึงไม่ต้อง reset flag นี้ —
+// กันแค่ไม่ให้ request ที่ 401 พร้อมกันหลายตัวเรียก logout()/set location ซ้ำ
 function redirectToLogin(): void {
-  clearStoredToken()
-  clearStoredRefreshToken()
+  if (redirecting) return
+  redirecting = true
+  useAuthStore.getState().logout()
   if (typeof window !== 'undefined') {
     window.location.href = '/login'
   }
@@ -153,6 +152,20 @@ function extractErrorContext(error: unknown): {
   return { status: null, config: undefined }
 }
 
+// request /refresh ตัวเดียวต่อรอบ token หมดอายุ — ถ้า authApiClient หลาย request
+// โดน 401 พร้อมกัน ต้องรอ refresh ตัวแรกตัวเดียวแล้ว retry ด้วย token ใหม่ ไม่งั้น
+// backend ที่ rotate refresh token จะทำให้ request ที่มาทีหลังใช้ refresh token
+// ที่ถูกเปลี่ยนไปแล้ว ล้มเหลว แล้วเด้งไป login ทั้งที่ session จริงยังใช้ได้
+let refreshPromise: Promise<RefreshResult> | null = null
+
+async function performRefresh(refreshToken: string): Promise<RefreshResult> {
+  const raw = await axios.post<{ data: RefreshResult }>(
+    `${process.env.NEXT_PUBLIC_AUTH_API_BASE_URL}/refresh`,
+    { token: refreshToken },
+  )
+  return raw.data.data
+}
+
 authApiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -172,13 +185,17 @@ authApiClient.interceptors.response.use(
     }
 
     try {
-      const raw = await axios.post<{ data: RefreshResult }>(
-        `${process.env.NEXT_PUBLIC_AUTH_API_BASE_URL}/refresh`,
-        { token: refreshToken },
-      )
-      const result = raw.data.data
-      setStoredToken(result.token)
-      setStoredRefreshToken(result.refreshToken)
+      if (!refreshPromise) {
+        refreshPromise = performRefresh(refreshToken)
+          .then((result) => {
+            useAuthStore.getState().setTokens(result.token, result.refreshToken)
+            return result
+          })
+          .finally(() => {
+            refreshPromise = null
+          })
+      }
+      await refreshPromise
 
       config._retry = true
       return authApiClient(config)

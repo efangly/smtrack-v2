@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Map as MapIcon, Pencil, Plus, Search, Table, Trash2 } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import {
@@ -11,10 +11,11 @@ import {
 import { Pagination } from '@/components/ui/Pagination'
 import { useCreateHospital } from '@/hooks/useCreateHospital'
 import { useDeleteHospital } from '@/hooks/useDeleteHospital'
+import { useHospitalDeviceStats } from '@/hooks/useHospitalDeviceStats'
 import { usePaginationParams } from '@/hooks/usePaginationParams'
 import { useHospitals } from '@/hooks/useHospitals'
 import { useUpdateHospital } from '@/hooks/useUpdateHospital'
-import { HOS_TYPE_LABELS } from '@/lib/api/hospitals'
+import { HOS_TYPE_LABELS, type Hospital } from '@/lib/api/hospitals'
 import { canDeleteHospital, canManageHospitals } from '@/lib/permissions'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useHydrated } from '@/hooks/useHydrated'
@@ -23,6 +24,9 @@ import {
   HospitalFormDialog,
   type HospitalFormDialogHandle,
 } from './HospitalFormDialog'
+import { HospitalMap } from './HospitalMap'
+
+type ViewMode = 'table' | 'map'
 
 export function HospitalList() {
   const hydrated = useHydrated()
@@ -31,6 +35,7 @@ export function HospitalList() {
   const canDelete = hydrated && canDeleteHospital(role)
 
   const { data: hospitals, isLoading, isError } = useHospitals()
+  const { statsByHospitalId } = useHospitalDeviceStats()
   const createHospital = useCreateHospital()
   const updateHospital = useUpdateHospital()
   const deleteHospital = useDeleteHospital()
@@ -39,6 +44,7 @@ export function HospitalList() {
   const deleteDialogRef = useRef<ConfirmDialogHandle>(null)
   const targetIdRef = useRef<string>('')
   const [keyword, setKeyword] = useState('')
+  const [view, setView] = useState<ViewMode>('table')
   const { page, limit, setPage, setLimit } = usePaginationParams()
 
   const filtered = useMemo(() => {
@@ -90,17 +96,40 @@ export function HospitalList() {
   return (
     <Card title={title} action={action}>
       <div className="flex flex-col gap-3">
-      <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
-        <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
-        <input
-          type="search"
-          className="grow"
-          placeholder="ค้นหาชื่อโรงพยาบาล / ผู้ติดต่อ"
-          aria-label="ค้นหาโรงพยาบาล"
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
-        />
-      </label>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="input input-sm input-bordered flex w-full items-center gap-2 sm:max-w-xs">
+          <Search className="h-4 w-4 opacity-50" aria-hidden="true" />
+          <input
+            type="search"
+            className="grow"
+            placeholder="ค้นหาชื่อโรงพยาบาล / ผู้ติดต่อ"
+            aria-label="ค้นหาโรงพยาบาล"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+        </label>
+
+        <div role="group" aria-label="สลับมุมมอง" className="join self-start">
+          <button
+            type="button"
+            className={`btn join-item btn-sm ${view === 'table' ? 'btn-active btn-primary' : ''}`}
+            aria-pressed={view === 'table'}
+            aria-label="มุมมองตาราง"
+            onClick={() => setView('table')}
+          >
+            <Table className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`btn join-item btn-sm ${view === 'map' ? 'btn-active btn-primary' : ''}`}
+            aria-pressed={view === 'map'}
+            aria-label="มุมมองแผนที่"
+            onClick={() => setView('map')}
+          >
+            <MapIcon className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
 
       {!hospitals || hospitals.length === 0 ? (
         <p className="text-base-content/60">ยังไม่มีโรงพยาบาลในระบบ</p>
@@ -108,6 +137,14 @@ export function HospitalList() {
         <p className="py-6 text-center text-base-content/60">
           ไม่พบโรงพยาบาลที่ตรงกับเงื่อนไข
         </p>
+      ) : view === 'map' ? (
+        <HospitalMap
+          hospitals={filtered}
+          statsByHospitalId={statsByHospitalId}
+          onEditHospital={(hospital: Hospital) =>
+            formDialogRef.current?.open(hospital)
+          }
+        />
       ) : (
         <div className="overflow-x-auto scrollbar-slim">
           <table className="table table-zebra table-sm">
@@ -169,13 +206,15 @@ export function HospitalList() {
         </div>
       )}
 
-      <Pagination
-        page={page}
-        limit={limit}
-        totalItems={totalItems}
-        onPageChange={setPage}
-        onLimitChange={setLimit}
-      />
+      {view === 'table' && (
+        <Pagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
+      )}
 
       <HospitalFormDialog
         ref={formDialogRef}
