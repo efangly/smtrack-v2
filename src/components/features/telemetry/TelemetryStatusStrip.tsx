@@ -4,7 +4,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'rec
 
 import { formatDateTime } from '@/lib/utils'
 
-import { timeTick, type ChartRow } from './telemetry-chart-utils'
+import type { ChartRow } from './telemetry-chart-utils'
 
 export function TelemetryStatusStrip({
   data,
@@ -13,6 +13,8 @@ export function TelemetryStatusStrip({
   color,
   syncId,
   tickFormatter,
+  axisTickFormatter,
+  ticks,
   showXAxis = false,
   height = 56,
 }: {
@@ -22,6 +24,8 @@ export function TelemetryStatusStrip({
   color: string
   syncId: string
   tickFormatter: (value: number) => string
+  axisTickFormatter: (value: string) => string
+  ticks: string[]
   showXAxis?: boolean
   height?: number
 }) {
@@ -35,7 +39,8 @@ export function TelemetryStatusStrip({
         >
           <XAxis
             dataKey="sendTime"
-            tickFormatter={timeTick}
+            tickFormatter={axisTickFormatter}
+            ticks={ticks}
             stroke="var(--chart-axis)"
             tick={showXAxis ? { fill: 'var(--chart-muted)', fontSize: 12 } : false}
             axisLine={showXAxis}

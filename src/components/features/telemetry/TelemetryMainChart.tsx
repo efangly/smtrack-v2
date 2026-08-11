@@ -16,7 +16,7 @@ import {
 
 import { formatDateTime } from '@/lib/utils'
 
-import { timeTick, type ChartRow } from './telemetry-chart-utils'
+import type { ChartRow } from './telemetry-chart-utils'
 
 function ThresholdLine({
   y,
@@ -56,6 +56,8 @@ export function TelemetryMainChart({
   onSelectStart,
   onSelectMove,
   onSelectEnd,
+  tickFormatter,
+  ticks,
 }: {
   data: ChartRow[]
   syncId: string
@@ -68,6 +70,8 @@ export function TelemetryMainChart({
   onSelectStart?: (label: string) => void
   onSelectMove?: (label: string) => void
   onSelectEnd?: () => void
+  tickFormatter: (value: string) => string
+  ticks: string[]
 }) {
   // คลิกที่ legend เพื่อซ่อน/แสดงเส้นแต่ละเส้น — เก็บ key ที่ถูกซ่อนไว้ใน state
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
@@ -102,7 +106,8 @@ export function TelemetryMainChart({
         <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
         <XAxis
           dataKey="sendTime"
-          tickFormatter={timeTick}
+          tickFormatter={tickFormatter}
+          ticks={ticks}
           stroke="var(--chart-axis)"
           tick={{ fill: 'var(--chart-muted)', fontSize: 12 }}
         />

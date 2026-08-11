@@ -151,6 +151,10 @@ export function DeviceTelemetrySection({
                   range={queryRange.range}
                   from={queryRange.from}
                   to={queryRange.to}
+                  deviceName={deviceName}
+                  probeName={probe.name}
+                  tempMin={probe.tempMin}
+                  tempMax={probe.tempMax}
                 />
               </Card>
             </div>
@@ -198,6 +202,10 @@ export function DeviceTelemetrySection({
           range={queryRange.range}
           from={queryRange.from}
           to={queryRange.to}
+          deviceName={deviceName}
+          probeName={probes?.[0]?.name}
+          tempMin={probes?.[0]?.tempMin}
+          tempMax={probes?.[0]?.tempMax}
         />
       </Card>
     </div>
