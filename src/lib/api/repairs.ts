@@ -1,7 +1,15 @@
 import { z } from 'zod'
 
-import { apiClient } from '@/lib/apiClient'
+import { apiClient, type EnvelopeResponse } from '@/lib/apiClient'
 import type { PaginationQuery } from '@/lib/api/pagination'
+
+// ต้องตรงกับ RepairStatus enum ฝั่ง backend (src/device-repair/enums/repair-status.enum.ts)
+export const REPAIR_STATUS_OPTIONS = [
+  { value: 'pending', label: 'รอดำเนินการ' },
+  { value: 'in_progress', label: 'กำลังดำเนินการ' },
+  { value: 'resolved', label: 'เสร็จสิ้น' },
+] as const
+export type RepairStatus = (typeof REPAIR_STATUS_OPTIONS)[number]['value']
 
 export const RepairSchema = z.object({
   id: z.string(),
@@ -41,10 +49,22 @@ export type CreateRepairInput = z.infer<typeof CreateRepairSchema>
 export type UpdateRepairInput = Partial<CreateRepairInput>
 
 export async function getRepairs(
-  params: PaginationQuery = {},
+  params: PaginationQuery & { status?: RepairStatus } = {},
 ): Promise<Repair[]> {
   const { data } = await apiClient.get('/repairs', { params })
   return z.array(RepairSchema).parse(data)
+}
+
+const RepairCountMetaSchema = z.object({ total: z.number() })
+
+// ใช้ limit: 1 เพราะต้องการแค่ meta.total ของ Paginated<Repairs> ไม่ต้องโหลดทั้งหน้า
+export async function getRepairsCount(
+  params: { status?: RepairStatus } = {},
+): Promise<number> {
+  const response: EnvelopeResponse = await apiClient.get('/repairs', {
+    params: { ...params, limit: 1 },
+  })
+  return RepairCountMetaSchema.parse(response.meta).total
 }
 
 export async function getRepairsBySerial(

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { apiClient } from '@/lib/apiClient'
+import { apiClient, type EnvelopeResponse } from '@/lib/apiClient'
 import { fetchAllPages } from '@/lib/api/pagination'
 
 export const WarrantySchema = z.object({
@@ -48,6 +48,19 @@ export async function getWarranties(
     })
     return z.array(WarrantySchema).parse(data)
   })
+}
+
+const WarrantyCountMetaSchema = z.object({ total: z.number() })
+
+// ใช้ limit: 1 เพราะต้องการแค่ meta.total ของ Paginated<Warranties> ไม่ต้องโหลดทุก record
+// เหมือน getWarranties (ที่ใช้ fetchAllPages)
+export async function getWarrantiesCount(
+  params: { expiringSoon?: boolean } = {},
+): Promise<number> {
+  const response: EnvelopeResponse = await apiClient.get('/warranties', {
+    params: { ...params, limit: 1 },
+  })
+  return WarrantyCountMetaSchema.parse(response.meta).total
 }
 
 export async function createWarranty(

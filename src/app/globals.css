@@ -41,6 +41,8 @@
   --color-cat-sdcard: oklch(55% 0.14 245);
   --color-cat-sensor: oklch(54% 0.11 200);
   --color-cat-report: oklch(58% 0.03 250);
+  --color-cat-warranty: oklch(56% 0.16 320);
+  --color-cat-repair: oklch(58% 0.15 80);
 }
 
 :root[data-theme='dark'] {
@@ -51,6 +53,8 @@
   --color-cat-sdcard: oklch(70% 0.12 245);
   --color-cat-sensor: oklch(70% 0.1 200);
   --color-cat-report: oklch(70% 0.03 250);
+  --color-cat-warranty: oklch(72% 0.13 320);
+  --color-cat-repair: oklch(74% 0.12 80);
 }
 
 /* แผงแบรนด์หน้า login: ธีมมืดใช้ teal เข้มแทน primary สว่าง ไม่ให้จ้าเกินไป
@@ -202,6 +206,12 @@
 .accent-report {
   --accent-hue: var(--color-cat-report);
 }
+.accent-warranty {
+  --accent-hue: var(--color-cat-warranty);
+}
+.accent-repair {
+  --accent-hue: var(--color-cat-repair);
+}
 
 .accent-temp,
 .accent-door,
@@ -209,7 +219,9 @@
 .accent-plug,
 .accent-sdcard,
 .accent-sensor,
-.accent-report {
+.accent-report,
+.accent-warranty,
+.accent-repair {
   --accent: var(--accent-hue);
 }
 

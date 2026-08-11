@@ -1,7 +1,11 @@
 'use client'
 
+import { ShieldAlert, Wrench } from 'lucide-react'
+
 import { StatCard } from '@/components/ui/StatCard'
 import { useNotificationDashboardCount } from '@/hooks/useNotificationDashboardCount'
+import { useWarrantiesExpiringSoonCount } from '@/hooks/useWarrantiesExpiringSoonCount'
+import { useRepairsInProgressCount } from '@/hooks/useRepairsInProgressCount'
 import {
   CATEGORY_ACCENT_CLASS,
   NOTIFICATION_FILTERS,
@@ -28,6 +32,8 @@ const CATEGORIES: {
 
 export function NotificationCategoryStatsRow() {
   const { data, isLoading, isError } = useNotificationDashboardCount()
+  const warranty = useWarrantiesExpiringSoonCount()
+  const repairsInProgress = useRepairsInProgressCount()
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -49,6 +55,34 @@ export function NotificationCategoryStatsRow() {
           />
         )
       })}
+      <StatCard
+        label="ประกันใกล้หมด"
+        value={
+          warranty.isError || warranty.data === undefined
+            ? '—'
+            : warranty.data
+        }
+        hint={warranty.isError ? 'โหลดข้อมูลไม่สำเร็จ' : undefined}
+        icon={ShieldAlert}
+        accentClass="accent-warranty"
+        quiet={warranty.isError || (warranty.data ?? 0) === 0}
+        loading={warranty.isLoading}
+      />
+      <StatCard
+        label="แจ้งซ่อมที่กำลังดำเนินการ"
+        value={
+          repairsInProgress.isError || repairsInProgress.data === undefined
+            ? '—'
+            : repairsInProgress.data
+        }
+        hint={repairsInProgress.isError ? 'โหลดข้อมูลไม่สำเร็จ' : undefined}
+        icon={Wrench}
+        accentClass="accent-repair"
+        quiet={
+          repairsInProgress.isError || (repairsInProgress.data ?? 0) === 0
+        }
+        loading={repairsInProgress.isLoading}
+      />
     </div>
   )
 }

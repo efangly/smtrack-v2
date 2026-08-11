@@ -3,7 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import type { Repair, UpdateRepairInput } from '@/lib/api/repairs'
+import { REPAIR_STATUS_OPTIONS, type Repair, type UpdateRepairInput } from '@/lib/api/repairs'
 
 export interface RepairFormDialogHandle {
   open: (repair?: Repair) => void
@@ -25,6 +25,10 @@ export const RepairFormDialog = forwardRef<
 ) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  // ข้อมูลเก่าบางส่วนเก็บ status เป็น free text (ก่อนเปลี่ยนเป็น select ตาม
+  // REPAIR_STATUS_OPTIONS) — เก็บค่าที่ไม่ตรง enum ไว้แสดงเป็น option พิเศษ
+  // เพื่อไม่ให้ค่าหายไปตอนเปิดฟอร์มแก้ไข
+  const [legacyStatus, setLegacyStatus] = useState<string | null>(null)
   const { register, handleSubmit, reset, setValue } =
     useForm<UpdateRepairInput>({
       defaultValues: {},
@@ -33,6 +37,12 @@ export const RepairFormDialog = forwardRef<
   useImperativeHandle(ref, () => ({
     open: (repair) => {
       setEditingId(repair?.id ?? null)
+      const isKnownStatus = REPAIR_STATUS_OPTIONS.some(
+        (option) => option.value === repair?.status,
+      )
+      setLegacyStatus(
+        repair?.status && !isKnownStatus ? repair.status : null,
+      )
       reset(
         repair
           ? {
@@ -130,10 +140,20 @@ export const RepairFormDialog = forwardRef<
             </div>
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">สถานะ</label>
-              <input
-                className="input input-sm input-bordered w-full"
+              <select
+                className="select select-sm select-bordered w-full"
                 {...register('status')}
-              />
+              >
+                <option value="">— ไม่ระบุ —</option>
+                {legacyStatus && (
+                  <option value={legacyStatus}>{legacyStatus}</option>
+                )}
+                {REPAIR_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">
