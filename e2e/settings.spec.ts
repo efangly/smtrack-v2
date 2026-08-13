@@ -9,7 +9,6 @@ const password = process.env.E2E_ADMIN_PASSWORD
  */
 const SUB_PAGES: { path: string; heading: string }[] = [
   { path: '/settings/users', heading: 'รายการผู้ใช้งานทั้งหมด' },
-  { path: '/settings/wards', heading: 'รายการวอร์ดทั้งหมด' },
   { path: '/settings/hospitals', heading: 'รายการโรงพยาบาลทั้งหมด' },
   { path: '/settings/devices', heading: 'ทะเบียนอุปกรณ์' },
 ]

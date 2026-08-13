@@ -11,21 +11,42 @@ import { useAuthStore } from '@/store/useAuthStore'
  * cookie เฉพาะตอนมี navigation request จริง แต่การกลับมาแบบ bfcache ไม่มี
  * request ใหม่ proxy จึงไม่ได้รันซ้ำ ต้องกันอีกชั้นที่ client ทั้งตอน mount
  * ปกติ และตอนหน้าโดน restore แบบ bfcache (pageshow + persisted)
+ *
+ * เช็ค `exp` ของ token ประกอบ (ไม่ใช่แค่ว่ามี token) เพื่อกัน redirect loop
+ * กับ `proxy.ts` ที่เช็ค cookie — ถ้า token ใน store หมดอายุไปแล้วแต่ยังค้างอยู่
+ * (เช่น token เก่าก่อนแก้ cookie max-age ให้ตรงกับ exp) ต้อง logout() เคลียร์
+ * ทิ้งแทนที่จะ replace('/') ไปเจอ proxy เด้งกลับมา `/login` วนไม่จบ
  */
+function isTokenValid(token: string | null, exp: number | undefined): boolean {
+  if (!token) return false
+  if (exp === undefined) return true
+  return exp * 1000 > Date.now()
+}
+
 export function LoginGuard({ children }: { children: ReactNode }) {
   const router = useRouter()
   const hydrated = useHydrated()
   const token = useAuthStore((state) => state.token)
+  const exp = useAuthStore((state) => state.payload?.exp)
+  const logout = useAuthStore((state) => state.logout)
+  const valid = isTokenValid(token, exp)
 
   useEffect(() => {
-    if (hydrated && token) {
+    if (!hydrated) return
+    if (token && !valid) {
+      logout()
+      return
+    }
+    if (valid) {
       router.replace('/')
     }
-  }, [hydrated, token, router])
+  }, [hydrated, token, valid, logout, router])
 
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted && useAuthStore.getState().token) {
+      if (!event.persisted) return
+      const state = useAuthStore.getState()
+      if (isTokenValid(state.token, state.payload?.exp)) {
         router.replace('/')
       }
     }
@@ -33,7 +54,7 @@ export function LoginGuard({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('pageshow', handlePageShow)
   }, [router])
 
-  if (!hydrated || token) {
+  if (!hydrated || valid) {
     return (
       <div className="flex justify-center p-8">
         <span className="loading loading-spinner loading-lg" />

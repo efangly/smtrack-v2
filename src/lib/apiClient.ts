@@ -166,42 +166,51 @@ async function performRefresh(refreshToken: string): Promise<RefreshResult> {
   return raw.data.data
 }
 
-authApiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const { status, config } = extractErrorContext(error)
+// ผูก interceptor นี้กับทั้ง apiClient และ authApiClient เพราะ endpoint ข้อมูลจริง
+// ส่วนใหญ่ (devices, probes, telemetry, ...) เรียกผ่าน apiClient ไม่ใช่ authApiClient
+// — refreshPromise ยังเป็นตัวแปรเดียวร่วมกันข้ามทั้งสอง client เพื่อ dedup ให้ยิง
+// /refresh แค่ครั้งเดียวแม้ 401 มาจากทั้งสอง client พร้อมกัน
+function attachRefreshInterceptor(client: AxiosInstance): void {
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const { status, config } = extractErrorContext(error)
 
-    const isAuthEndpoint =
-      config?.url === '/login' || config?.url === '/refresh'
+      const isAuthEndpoint =
+        config?.url === '/login' || config?.url === '/refresh'
 
-    if (status !== 401 || !config || config._retry || isAuthEndpoint) {
-      return Promise.reject(error)
-    }
-
-    const refreshToken = getStoredRefreshToken()
-    if (!refreshToken) {
-      redirectToLogin()
-      return Promise.reject(error)
-    }
-
-    try {
-      if (!refreshPromise) {
-        refreshPromise = performRefresh(refreshToken)
-          .then((result) => {
-            useAuthStore.getState().setTokens(result.token, result.refreshToken)
-            return result
-          })
-          .finally(() => {
-            refreshPromise = null
-          })
+      if (status !== 401 || !config || config._retry || isAuthEndpoint) {
+        return Promise.reject(error)
       }
-      await refreshPromise
 
-      config._retry = true
-      return authApiClient(config)
-    } catch (refreshError) {
-      redirectToLogin()
-      return Promise.reject(refreshError)
-    }
-  },
-)
+      const refreshToken = getStoredRefreshToken()
+      if (!refreshToken) {
+        redirectToLogin()
+        return Promise.reject(error)
+      }
+
+      try {
+        if (!refreshPromise) {
+          refreshPromise = performRefresh(refreshToken)
+            .then((result) => {
+              useAuthStore.getState().setTokens(result.token, result.refreshToken)
+              return result
+            })
+            .finally(() => {
+              refreshPromise = null
+            })
+        }
+        await refreshPromise
+
+        config._retry = true
+        return client(config)
+      } catch (refreshError) {
+        redirectToLogin()
+        return Promise.reject(refreshError)
+      }
+    },
+  )
+}
+
+attachRefreshInterceptor(apiClient)
+attachRefreshInterceptor(authApiClient)

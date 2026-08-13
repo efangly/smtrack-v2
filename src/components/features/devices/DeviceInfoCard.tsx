@@ -1,9 +1,13 @@
+'use client'
+
 import type { ReactNode } from 'react'
 
 import type { Device } from '@/lib/api/devices'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
+import { useWards } from '@/hooks/useWards'
 import { resolveDeviceImageUrl } from '@/lib/imageUrl'
+import { matchesWard } from '@/lib/wardMatch'
 
 import { DeviceInfoStats } from './DeviceInfoStats'
 import { DeviceStatusBadge } from './DeviceStatusBadge'
@@ -17,6 +21,10 @@ export function DeviceInfoCard({
 }) {
   const positionPicUrl = resolveDeviceImageUrl(device.positionPic)
   const title = device.name ?? '-'
+
+  const { data: wards, isLoading: isWardsLoading } = useWards(!!device.ward)
+  const matchedWard = wards?.find((ward) => matchesWard(device.ward, ward))
+  const isWardLoading = !!device.ward && isWardsLoading
 
   return (
     <Card
@@ -61,6 +69,26 @@ export function DeviceInfoCard({
           <div>
             <dt className="text-base-content/60">หมายเหตุ</dt>
             <dd>{device.remark ?? '-'}</dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">วอร์ด</dt>
+            <dd>
+              {isWardLoading ? (
+                <span className="loading loading-spinner loading-sm" />
+              ) : (
+                (matchedWard?.wardName ?? '-')
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-base-content/60">โรงพยาบาล</dt>
+            <dd>
+              {isWardLoading ? (
+                <span className="loading loading-spinner loading-sm" />
+              ) : (
+                (matchedWard?.hospital?.hosName ?? '-')
+              )}
+            </dd>
           </div>
 
           <DeviceInfoStats device={device} />

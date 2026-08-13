@@ -155,7 +155,8 @@ npm test
 
 ### เมนูตั้งค่า (`/settings/*`)
 
-- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `notifications` (ตั้งค่าเสียงแจ้งเตือน), `users`, `wards`, `hospitals`, `devices`, `firmware`, `backup` เป็น sub-route
+- โครง: `/settings` redirect ไป `/settings/account` แล้วมี `notifications` (ตั้งค่าเสียงแจ้งเตือน), `users`, `hospitals`, `devices`, `firmware`, `backup` เป็น sub-route
+- ไม่มีเมนู/route แยกสำหรับ "วอร์ด" อีกต่อไป — จัดการวอร์ดของแต่ละโรงพยาบาลผ่าน section ในโมดัลแก้ไขโรงพยาบาล (`HospitalWardsSection`, เปิดจาก `HospitalFormDialog` ที่ `/settings/hospitals`) แทน
 - `<h1>ตั้งค่า</h1>` อยู่ที่ `src/app/(main)/settings/layout.tsx` **ที่เดียว** — หน้าย่อยใส่ได้แค่หัวข้อระดับการ์ด
 - เมนูย่อยประกาศใน `NavItem.children` (`src/components/layout/navItems.ts`) พร้อม `can` predicate ส่วน `SidebarNav` เป็นตัวกรองตาม role (ต้องผ่าน `useHydrated()` ก่อน ไม่งั้น hydration ไม่ตรง)
 - `src/proxy.ts` เช็คแค่ว่ามี token cookie **ไม่ได้เช็ค role** — หน้าที่จำกัดสิทธิ์ต้องครอบด้วย `SettingsGuard` (รับ prop เป็น key ไม่ใช่ function เพราะ page เป็น Server Component ส่ง function ข้าม boundary ไม่ได้)
@@ -169,7 +170,7 @@ npm test
 เก็บเป็นสตริงเปล่าๆ และไม่ได้ผูก foreign key จริงกับตาราง
 `Wards` ของ auth service — วอร์ดฝั่ง auth service มาจาก `hospital.ward[]` ที่ backend preload ติดมากับ
 `Hospital` (`src/lib/api/hospitals.ts`, `HospitalWardSchema`: `id` เป็น `WID-...`, `wardName`, `wardSeq`,
-`hosId`) เดียวกับที่ `/settings/wards` ใช้ CRUD ผ่าน `src/lib/api/wards.ts`
+`hosId`) เดียวกับที่ `HospitalWardsSection` (เปิดจากโมดัลแก้ไขโรงพยาบาลใน `/settings/hospitals`) ใช้ CRUD ผ่าน `src/lib/api/wards.ts`
 
 **ความสัมพันธ์ที่ต้องรักษา**: ค่าที่เก็บในฟิลด์ `ward` ของอุปกรณ์ ต้องตรงกับ `hospital.ward[].id` ของวอร์ด
 ที่อุปกรณ์นั้นสังกัดอยู่จริง (ไม่ใช่ผูก foreign key ในฐานข้อมูล แต่เป็น "ค่าที่ควรเท่ากัน" ระหว่างสอง

@@ -10,6 +10,8 @@ import {
   type HospitalInput,
 } from '@/lib/api/hospitals'
 
+import { HospitalWardsSection } from './HospitalWardsSection'
+
 export interface HospitalFormDialogHandle {
   open: (hospital?: Hospital) => void
 }
@@ -162,6 +164,8 @@ export const HospitalFormDialog = forwardRef<
               />
             </div>
           </div>
+
+          {editingId && <HospitalWardsSection hospitalId={editingId} />}
 
           <div className="modal-action">
             <button

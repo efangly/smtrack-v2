@@ -18,7 +18,6 @@ import {
   canManageDevices,
   canManageHospitals,
   canManageUsers,
-  canManageWards,
 } from '@/lib/permissions'
 import type { Role } from '@/types/auth'
 
@@ -61,12 +60,6 @@ export const SETTINGS_ITEM: NavItem = {
       label: 'ผู้ใช้งาน',
       icon: Users,
       can: canManageUsers,
-    },
-    {
-      href: '/settings/wards',
-      label: 'วอร์ด',
-      icon: LayoutDashboard,
-      can: canManageWards,
     },
     {
       href: '/settings/hospitals',

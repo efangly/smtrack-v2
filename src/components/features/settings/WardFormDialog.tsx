@@ -7,10 +7,12 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { Controller, useForm } from 'react-hook-form'
 
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { useHospitals } from '@/hooks/useHospitals'
+import { useHydrated } from '@/hooks/useHydrated'
 import {
   WARD_TYPE_LABELS,
   WARD_TYPE_OPTIONS,
@@ -27,11 +29,14 @@ export const WardFormDialog = forwardRef<
   {
     onSubmit: (id: string | null, dto: WardInput) => void
     isSubmitting?: boolean
+    /** ล็อกโรงพยาบาลตายตัวและซ่อน dropdown เลือก — ใช้ตอนเปิดจากในโมดัลแก้ไขโรงพยาบาล */
+    lockedHosId?: string
   }
->(function WardFormDialog({ onSubmit, isSubmitting }, ref) {
+>(function WardFormDialog({ onSubmit, isSubmitting, lockedHosId }, ref) {
+  const hydrated = useHydrated()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const { data: hospitals } = useHospitals()
+  const { data: hospitals } = useHospitals(!lockedHosId)
 
   const {
     register,
@@ -59,7 +64,7 @@ export const WardFormDialog = forwardRef<
               wardName: ward.wardName,
               wardSeq: ward.wardSeq,
               type: ward.type ?? undefined,
-              hosId: ward.hosId,
+              hosId: lockedHosId ?? ward.hosId,
             }
           : {
               // react-hook-form's reset() falls back to the *current* field
@@ -68,7 +73,7 @@ export const WardFormDialog = forwardRef<
               wardName: '',
               wardSeq: 0,
               type: 'NEW',
-              hosId: '',
+              hosId: lockedHosId ?? '',
             },
       )
       dialogRef.current?.showModal()
@@ -80,7 +85,11 @@ export const WardFormDialog = forwardRef<
     dialogRef.current?.close()
   })
 
-  return (
+  if (!hydrated) return null
+
+  // portal ไปที่ document.body — dialog นี้อาจถูกเปิดจากใน <form> ของ HospitalFormDialog
+  // (ดู HospitalWardsSection) ถ้า render อยู่ในต้นไม้ปกติจะได้ <form> ซ้อน <form> ซึ่ง HTML ไม่อนุญาต
+  return createPortal(
     <dialog ref={dialogRef} className="modal">
       <div className="modal-box max-w-xl">
         <h3 className="text-lg font-bold">
@@ -107,32 +116,34 @@ export const WardFormDialog = forwardRef<
               </span>
             </div>
 
-            <div className="form-control">
-              <label
-                htmlFor="ward-hospital"
-                className="label-text mb-1 block text-xs"
-              >
-                โรงพยาบาล *
-              </label>
-              <Controller
-                control={control}
-                name="hosId"
-                rules={{ required: 'กรุณาเลือกโรงพยาบาล' }}
-                render={({ field }) => (
-                  <SearchableSelect
-                    id="ward-hospital"
-                    options={hospitalOptions}
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    placeholder="- เลือกโรงพยาบาล -"
-                  />
-                )}
-              />
-              <span className="mt-1 text-xs text-error empty:hidden">
-                {errors.hosId?.message}
-              </span>
-            </div>
+            {!lockedHosId && (
+              <div className="form-control">
+                <label
+                  htmlFor="ward-hospital"
+                  className="label-text mb-1 block text-xs"
+                >
+                  โรงพยาบาล *
+                </label>
+                <Controller
+                  control={control}
+                  name="hosId"
+                  rules={{ required: 'กรุณาเลือกโรงพยาบาล' }}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      id="ward-hospital"
+                      options={hospitalOptions}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder="- เลือกโรงพยาบาล -"
+                    />
+                  )}
+                />
+                <span className="mt-1 text-xs text-error empty:hidden">
+                  {errors.hosId?.message}
+                </span>
+              </div>
+            )}
 
             <div className="form-control">
               <label className="label-text mb-1 block text-xs">ลำดับ</label>
@@ -182,6 +193,7 @@ export const WardFormDialog = forwardRef<
       <form method="dialog" className="modal-backdrop">
         <button>close</button>
       </form>
-    </dialog>
+    </dialog>,
+    document.body,
   )
 })
