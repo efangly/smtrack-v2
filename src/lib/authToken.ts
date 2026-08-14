@@ -19,14 +19,14 @@ export function setStoredToken(token: string): void {
   const exp = decodeJwtPayload<UserJwtPayload>(token)?.exp
   const maxAge =
     exp !== undefined ? Math.max(0, exp - Math.floor(Date.now() / 1000)) : undefined
-  document.cookie = `${TOKEN_COOKIE_NAME}=${token}; path=/; SameSite=Lax${
+  document.cookie = `${TOKEN_COOKIE_NAME}=${token}; path=/; SameSite=Lax; Secure${
     maxAge !== undefined ? `; max-age=${maxAge}` : ''
   }`
 }
 
 export function clearStoredToken(): void {
   localStorage.removeItem(TOKEN_STORAGE_KEY)
-  document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`
+  document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax; Secure`
 }
 
 export function getStoredRefreshToken(): string | null {
