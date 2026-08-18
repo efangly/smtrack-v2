@@ -28,7 +28,7 @@ function formatTime(iso: string | undefined) {
 }
 
 export function DeviceCard({ device }: { device: Device }) {
-  const { data: telemetry } = useLatestTelemetry(device.serial)
+  const { data: telemetry } = useLatestTelemetry(device.id)
   const { data: probes, isLoading: probesLoading } = useDeviceProbeTelemetry(
     device.id,
   )

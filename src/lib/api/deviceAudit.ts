@@ -3,6 +3,12 @@ import { z } from 'zod'
 import { apiClient } from '@/lib/apiClient'
 import type { PaginationQuery } from '@/lib/api/pagination'
 
+const FieldDiffSchema = z.record(
+  z.string(),
+  z.object({ from: z.unknown(), to: z.unknown() }),
+)
+export type FieldDiff = z.infer<typeof FieldDiffSchema>
+
 export const DeviceAuditSchema = z.object({
   id: z.string(),
   deviceId: z.string(),
@@ -11,7 +17,7 @@ export const DeviceAuditSchema = z.object({
   actorId: z.string().nullable(),
   actorName: z.string().nullable(),
   actorRole: z.string().nullable(),
-  snapshot: z.unknown(),
+  diff: FieldDiffSchema.nullable(),
   createAt: z.string(),
 })
 export type DeviceAudit = z.infer<typeof DeviceAuditSchema>

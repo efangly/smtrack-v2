@@ -14,7 +14,9 @@ export interface TelemetryGraphHandle {
 }
 
 export const TelemetryGraph = forwardRef<TelemetryGraphHandle, {
+  // ใช้เฉพาะแสดงผล (syncId/modal) — คิวรีข้อมูลจริงผ่าน deviceId เพื่อให้ต่อเนื่องข้ามการสลับเครื่อง
   serial: string
+  deviceId: string
   probeId?: string
   range?: TelemetryRange
   from?: string
@@ -25,11 +27,11 @@ export const TelemetryGraph = forwardRef<TelemetryGraphHandle, {
   deviceName?: string | null
   probeName?: string | null
 }>(function TelemetryGraph(
-  { serial, probeId, range, from, to, tempMin, tempMax, title = 'กราฟ telemetry', deviceName, probeName },
+  { serial, deviceId, probeId, range, from, to, tempMin, tempMax, title = 'กราฟ telemetry', deviceName, probeName },
   ref,
 ) {
   const { data, isLoading, isError } = useTelemetry({
-    serial,
+    deviceId,
     probeId,
     range,
     from,

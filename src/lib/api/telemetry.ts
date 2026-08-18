@@ -28,7 +28,11 @@ export type LogDay = z.infer<typeof LogDaySchema>
 export type TelemetryRange = '1d' | '7d' | '30d' | 'custom'
 
 export interface QueryTelemetryParams {
+  // กรองด้วยกล่องฮาร์ดแวร์เท่านั้น — ได้เฉพาะ log ที่กล่องนั้นยิงมา ไม่ต่อเนื่องข้ามการสลับเครื่อง
+  // ใช้ deviceId แทนเมื่อรู้จุดติดตั้ง (ดู DeviceTelemetrySection)
   serial?: string
+  // กรองด้วยจุดติดตั้ง — ได้ประวัติต่อเนื่องข้ามการสลับเครื่อง (ตรงกับ backend QueryTelemetryDto.deviceId)
+  deviceId?: string
   probeId?: string
   range?: TelemetryRange
   from?: string

@@ -43,7 +43,7 @@ function probeLabel(probe: ProbeTelemetry) {
 
 // รายการ dt/dd สถานะอุปกรณ์ — ใช้แทรกเข้า dl เดียวกับ Serial/Firmware/ตำแหน่ง
 export function DeviceInfoStats({ device }: { device: Device }) {
-  const { data: telemetry } = useLatestTelemetry(device.serial)
+  const { data: telemetry } = useLatestTelemetry(device.id)
   const { data: probes } = useDeviceProbeTelemetry(device.id)
   const doorProbes = probes?.filter((probe) => probe.doorQty > 0) ?? []
 

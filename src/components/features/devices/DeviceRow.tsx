@@ -12,7 +12,7 @@ import { DeviceTelemetryIcons } from './DeviceTelemetryIcons'
 import { ProbeDoorIcons, ProbeInfoLine, ProbeTempHumiLine } from './ProbeTelemetryLine'
 
 export function DeviceRow({ device }: { device: Device }) {
-  const { data: telemetry } = useLatestTelemetry(device.serial)
+  const { data: telemetry } = useLatestTelemetry(device.id)
   const { data: probes, isLoading: probesLoading } = useDeviceProbeTelemetry(device.id)
   const href = `/devices/${encodeURIComponent(device.staticName)}`
   const singleProbe = probes && probes.length === 1 ? probes[0] : undefined

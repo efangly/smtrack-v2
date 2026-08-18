@@ -5,8 +5,67 @@ import { useHydrated } from '@/hooks/useHydrated'
 import { canManageDevices } from '@/lib/permissions'
 import { useDeviceAudit } from '@/hooks/useDeviceAudit'
 import { usePaginationParams } from '@/hooks/usePaginationParams'
+import type { FieldDiff } from '@/lib/api/deviceAudit'
 import { Card } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
+import { Badge } from '@/components/ui/Badge'
+
+function formatDiffValue(value: unknown): string {
+  if (value === null || value === undefined) return '-'
+  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  return String(value)
+}
+
+function DiffCell({ diff }: { diff: FieldDiff | null }) {
+  if (diff === null) {
+    return <span className="text-base-content/50">สร้างอุปกรณ์</span>
+  }
+
+  const fields = Object.entries(diff)
+  if (fields.length === 0) {
+    return <span className="text-base-content/50">ไม่มีการเปลี่ยนแปลงข้อมูล</span>
+  }
+
+  return (
+    <details className="w-full">
+      <summary className="cursor-pointer text-sm text-primary select-none">
+        ดูการเปลี่ยนแปลง ({fields.length})
+      </summary>
+      <div className="mt-2 flex flex-col gap-2">
+        {fields.map(([field, { from, to }]) => {
+          const fromText = formatDiffValue(from)
+          const toText = formatDiffValue(to)
+          const isMultiline = fromText.includes('\n') || toText.includes('\n')
+          return (
+            <div key={field} className="rounded-box bg-base-200 p-2 text-xs">
+              <div className="mb-1 font-medium">{field}</div>
+              <div className="flex flex-wrap items-start gap-1">
+                <Badge tone="error">จาก</Badge>
+                {isMultiline ? (
+                  <pre className="scrollbar-slim max-w-full overflow-x-auto rounded bg-base-300 p-1">
+                    {fromText}
+                  </pre>
+                ) : (
+                  <span className="break-all">{fromText}</span>
+                )}
+              </div>
+              <div className="mt-1 flex flex-wrap items-start gap-1">
+                <Badge tone="success">เป็น</Badge>
+                {isMultiline ? (
+                  <pre className="scrollbar-slim max-w-full overflow-x-auto rounded bg-base-300 p-1">
+                    {toText}
+                  </pre>
+                ) : (
+                  <span className="break-all">{toText}</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </details>
+  )
+}
 
 export function DeviceAuditTable({ staticName }: { staticName: string }) {
   const hydrated = useHydrated()
@@ -60,6 +119,7 @@ export function DeviceAuditTable({ staticName }: { staticName: string }) {
                 <th>เวลา</th>
                 <th>การกระทำ</th>
                 <th>ผู้ดำเนินการ</th>
+                <th>การเปลี่ยนแปลง</th>
               </tr>
             </thead>
             <tbody>
@@ -76,6 +136,9 @@ export function DeviceAuditTable({ staticName }: { staticName: string }) {
                         ({entry.actorRole})
                       </span>
                     )}
+                  </td>
+                  <td>
+                    <DiffCell diff={entry.diff} />
                   </td>
                 </tr>
               ))}

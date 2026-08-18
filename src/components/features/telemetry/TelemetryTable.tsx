@@ -9,6 +9,7 @@ import { formatDateTime } from '@/lib/utils'
 
 export function TelemetryTable({
   serial,
+  deviceId,
   probeId,
   range,
   from,
@@ -18,7 +19,9 @@ export function TelemetryTable({
   tempMin,
   tempMax,
 }: {
+  // ใช้เฉพาะแสดงผล/export — คิวรีข้อมูลจริงผ่าน deviceId เพื่อให้ต่อเนื่องข้ามการสลับเครื่อง
   serial: string
+  deviceId: string
   probeId?: string
   range?: TelemetryRange
   from?: string
@@ -29,7 +32,7 @@ export function TelemetryTable({
   tempMax?: number | null
 }) {
   const { data, isLoading, isError } = useTelemetry({
-    serial,
+    deviceId,
     probeId,
     range,
     from,

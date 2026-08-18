@@ -132,6 +132,7 @@ export function DeviceTelemetrySection({
                     else probeGraphRefs.current.delete(probe.id)
                   }}
                   serial={serial}
+                  deviceId={deviceId}
                   probeId={probe.id}
                   range={queryRange.range}
                   from={queryRange.from}
@@ -147,6 +148,7 @@ export function DeviceTelemetrySection({
               <Card title={`ข้อมูล telemetry ล่าสุด${label}`}>
                 <TelemetryTable
                   serial={serial}
+                  deviceId={deviceId}
                   probeId={probe.id}
                   range={queryRange.range}
                   from={queryRange.from}
@@ -180,6 +182,7 @@ export function DeviceTelemetrySection({
         <TelemetryGraph
           ref={singleGraphRef}
           serial={serial}
+          deviceId={deviceId}
           probeId={probes?.[0]?.id}
           range={queryRange.range}
           from={queryRange.from}
@@ -198,6 +201,7 @@ export function DeviceTelemetrySection({
       >
         <TelemetryTable
           serial={serial}
+          deviceId={deviceId}
           probeId={probes?.[0]?.id}
           range={queryRange.range}
           from={queryRange.from}

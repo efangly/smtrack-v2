@@ -11,6 +11,6 @@ export function useTelemetry(params: QueryTelemetryParams) {
     // ใช้ getAllTelemetry (paginate จนครบ) แทน getTelemetry หน้าเดียว — ผู้ใช้เลือก
     // range แล้วต้องเห็นข้อมูลครบทั้งช่วง ไม่ใช่แค่ default limit ของ backend
     queryFn: () => getAllTelemetry(params),
-    enabled: !!params.serial && !customIncomplete,
+    enabled: (!!params.deviceId || !!params.serial) && !customIncomplete,
   })
 }
