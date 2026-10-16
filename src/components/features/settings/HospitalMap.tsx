@@ -534,7 +534,7 @@ export function HospitalMap({
                       textAnchor="middle"
                       y={-10 / liveZoom}
                       style={{
-                        fontSize: (view.level !== 'country' ? 10 : 6) / liveZoom,
+                        fontSize: (view.level !== 'country' ? 8 : 5) / liveZoom,
                         fill: 'var(--color-base-content)',
                         stroke: 'var(--color-base-100)',
                         strokeWidth: (view.level !== 'country' ? 3 : 2) / liveZoom,

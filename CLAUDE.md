@@ -132,6 +132,12 @@ npm test
 - สีของกราฟ recharts มาจาก CSS variable ใต้ `.viz-root` ใน `globals.css` ซึ่งอ้างอิง `:root[data-theme='dark']` เท่านั้น ไม่ต้องพึ่ง `prefers-color-scheme`
 - component ที่อ่านค่าเริ่มต้นจาก localStorage (เช่น token) ต้องกันด้วย `useHydrated()` (`src/hooks/useHydrated.ts`) ไม่งั้น hydration ไม่ตรง
 
+### ขนาดตัวอักษร
+
+- type scale ของ Tailwind (`--text-*`) และ `body` ถูกลดเหลือ 80% ที่ `@theme inline` ใน `src/app/globals.css` โดยไม่แตะ `html` เพื่อไม่ให้ rem ของ spacing เปลี่ยน
+- DaisyUI hardcode font-size ใน layer ของตัวเอง จึง override ไว้ใน `globals.css` ด้วย (`.btn`, `.input-*`, `.table-*`, `.badge-*` ฯลฯ) — ถ้าเพิ่ม component ของ daisy ตัวใหม่ที่มีขนาด font ต้องเพิ่ม override คู่กัน
+- ค่า px ใน JS (recharts tick, Avatar, แผนที่) ปรับเองแล้ว
+
 ### SSE stream การแจ้งเตือน
 
 - `/stream?channels=device,notification` มี EventSource **ตัวเดียวทั้งแอป** อยู่ที่ `RealtimeFeedProvider` (`src/components/features/realtime/RealtimeFeedProvider.tsx`, mount ใน `src/app/(main)/layout.tsx`) ผลลัพธ์ฝั่งการแจ้งเตือนเก็บใน `src/store/useNotificationFeedStore.ts` ส่วน event `device` ใช้ patch React Query cache ของ `['devices']` ตรง ๆ — `src/app/(main)/layout.tsx` ยัง mount `NotificationToastEmitter` (`src/components/features/notifications/NotificationToastEmitter.tsx`) คู่กันเพื่อโชว์ toast ของแจ้งเตือนที่เข้ามาระหว่างเปิดแอป

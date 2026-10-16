@@ -44,7 +44,7 @@ export function Avatar({
         {fallback ?? (
           <span
             className="font-semibold uppercase"
-            style={{ fontSize: Math.max(11, Math.round(size * 0.4)) }}
+            style={{ fontSize: Math.max(9, Math.round(size * 0.32)) }}
           >
             {alt.trim().charAt(0) || '?'}
           </span>

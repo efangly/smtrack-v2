@@ -42,7 +42,7 @@ export function TelemetryStatusStrip({
             tickFormatter={axisTickFormatter}
             ticks={ticks}
             stroke="var(--chart-axis)"
-            tick={showXAxis ? { fill: 'var(--chart-muted)', fontSize: 12 } : false}
+            tick={showXAxis ? { fill: 'var(--chart-muted)', fontSize: 10 } : false}
             axisLine={showXAxis}
             tickLine={showXAxis}
             height={showXAxis ? 24 : 1}
@@ -52,7 +52,7 @@ export function TelemetryStatusStrip({
             ticks={[0, 1]}
             tickFormatter={tickFormatter}
             stroke={color}
-            tick={{ fill: 'var(--chart-muted)', fontSize: 11 }}
+            tick={{ fill: 'var(--chart-muted)', fontSize: 9 }}
             width={48}
           />
           <Tooltip

@@ -8,6 +8,69 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* type scale ลดลง 20% (เดิม 0.75/0.875/1/1.125/1.25/1.5/1.875/2.25rem) — ไม่แตะ rem ของ spacing */
+  --text-xs: 0.6rem;
+  --text-sm: 0.7rem;
+  --text-base: 0.8rem;
+  --text-lg: 0.9rem;
+  --text-xl: 1rem;
+  --text-2xl: 1.2rem;
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.8rem;
+  --text-5xl: 2.4rem;
+  --text-6xl: 3rem;
+  --text-7xl: 3.6rem;
+  --text-8xl: 4.8rem;
+  --text-9xl: 6.4rem;
+}
+
+body {
+  font-size: 0.8rem;
+}
+
+/* ---------- DaisyUI: font-size ลด 20% ----------
+   daisy hardcode rem ใน @layer ของตัวเอง — rule นอก layer จึงชนะ (ค่าเดิม ×0.8) */
+.btn {
+  font-size: calc(var(--fontsize, 0.875rem) * 0.8);
+}
+.input,
+.select,
+.textarea,
+.table,
+.menu,
+.badge,
+.label,
+.input-md,
+.select-md,
+.textarea-md,
+.table-md,
+.menu-md,
+.badge-md {
+  font-size: 0.7rem;
+}
+.input-xs,
+.select-xs,
+.textarea-xs,
+.table-xs,
+.menu-xs {
+  font-size: 0.55rem;
+}
+.input-sm,
+.select-sm,
+.textarea-sm,
+.table-sm,
+.menu-sm {
+  font-size: 0.6rem;
+}
+.badge-sm {
+  font-size: 0.6rem;
+}
+.badge-xs {
+  font-size: 0.5rem;
+}
+.badge-lg {
+  font-size: 0.8rem;
 }
 
 /* ---------- brand: cold-chain teal ----------

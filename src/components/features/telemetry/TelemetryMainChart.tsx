@@ -38,7 +38,7 @@ function ThresholdLine({
         value: label,
         position: 'insideBottomLeft',
         fill: 'var(--chart-muted)',
-        fontSize: 10,
+        fontSize: 8,
       }}
     />
   )
@@ -109,12 +109,12 @@ export function TelemetryMainChart({
           tickFormatter={tickFormatter}
           ticks={ticks}
           stroke="var(--chart-axis)"
-          tick={{ fill: 'var(--chart-muted)', fontSize: 12 }}
+          tick={{ fill: 'var(--chart-muted)', fontSize: 10 }}
         />
         <YAxis
           yAxisId="temp"
           stroke="var(--chart-series-temp)"
-          tick={{ fill: 'var(--chart-muted)', fontSize: 12 }}
+          tick={{ fill: 'var(--chart-muted)', fontSize: 10 }}
           unit="°C"
           width={48}
         />
@@ -122,7 +122,7 @@ export function TelemetryMainChart({
           yAxisId="humidity"
           orientation="right"
           stroke="var(--chart-series-humidity)"
-          tick={{ fill: 'var(--chart-muted)', fontSize: 12 }}
+          tick={{ fill: 'var(--chart-muted)', fontSize: 10 }}
           unit="%"
           width={48}
         />
@@ -141,7 +141,7 @@ export function TelemetryMainChart({
         />
         <Legend
           onClick={(entry) => toggleSeries(String(entry.dataKey))}
-          wrapperStyle={{ fontSize: 12, color: 'var(--chart-muted)', cursor: 'pointer' }}
+          wrapperStyle={{ fontSize: 10, color: 'var(--chart-muted)', cursor: 'pointer' }}
           formatter={(value, entry) => (
             <span
               style={{
